@@ -1,0 +1,19 @@
+# Environment & rahasia
+.env
+.env.*
+!.env.example
+
+# Aturan lokal AI Agent
+AGENTS.md
+
+# Python & uv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS & IDE
+.DS_Store
+Thumbs.db
