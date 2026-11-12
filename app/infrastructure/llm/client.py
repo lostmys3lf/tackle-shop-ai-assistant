@@ -94,6 +94,9 @@ class LLMClient:
 
     def _create_openai_client(self) -> Any:
         """Create standard OpenAI client or Langfuse-instrumented OpenAI client."""
+        # Gunakan placeholder jika api_key kosong agar inisialisasi di CI tidak crash
+        api_key = self.config.api_key or "dummy-api-key"
+
         # Sinkronkan environment variable Langfuse jika diisi
         if self.is_langfuse_enabled:
             os.environ["LANGFUSE_PUBLIC_KEY"] = self.config.langfuse_public_key
@@ -104,7 +107,7 @@ class LLMClient:
             try:
                 return LangfuseOpenAI(
                     base_url=self.config.base_url,
-                    api_key=self.config.api_key,
+                    api_key=api_key,
                     timeout=self.config.timeout,
                 )
             except Exception as exc:  # pylint: disable=broad-exception-caught
@@ -114,7 +117,7 @@ class LLMClient:
 
         return StandardOpenAI(
             base_url=self.config.base_url,
-            api_key=self.config.api_key,
+            api_key=api_key,
             timeout=self.config.timeout,
         )
 
