@@ -1,0 +1,48 @@
+name: LLM Evaluation
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "prompts/**"
+      - "app/infrastructure/llm/**"
+      - "evals/**"
+
+jobs:
+  evaluate:
+    name: Run LLM Accuracy Evaluation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Run Evaluation Suite
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL || 'https://api.groq.com/openai/v1' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'openai/gpt-oss-120b' }}
+          LLM_FALLBACK_MODEL: ${{ vars.LLM_FALLBACK_MODEL || 'openai/gpt-oss-20b' }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com' }}
+        run: uv run python evals/run_eval.py
+
+      - name: Upload Evaluation Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: evals/eval_report.json

@@ -1,0 +1,1025 @@
+{
+  "timestamp": 1794469336.3378665,
+  "overall_accuracy": 0.9893048128342246,
+  "threshold": 0.85,
+  "router_accuracy": 1.0,
+  "transaction_field_accuracies": {
+    "type": 1.0,
+    "item_count": 1.0,
+    "product_id": 1.0,
+    "qty": 0.9459459459459459,
+    "unit_price": 1.0
+  },
+  "router_details": [
+    {
+      "id": "rt_01",
+      "text": "laku pelet jitu 2 bks",
+      "expected": "sale",
+      "actual": "sale",
+      "match": true
+    },
+    {
+      "id": "rt_02",
+      "text": "terjual senar litecate 1 roll harga 35000",
+      "expected": "sale",
+      "actual": "sale",
+      "match": true
+    },
+    {
+      "id": "rt_03",
+      "text": "beli pelet jitu 20 bungkus harga 2500",
+      "expected": "purchase",
+      "actual": "purchase",
+      "match": true
+    },
+    {
+      "id": "rt_04",
+      "text": "kulakan umpan pak ikin 15 bungkus",
+      "expected": "purchase",
+      "actual": "purchase",
+      "match": true
+    },
+    {
+      "id": "rt_05",
+      "text": "stok pelet jitu sisa berapa?",
+      "expected": "question",
+      "actual": "question",
+      "match": true
+    },
+    {
+      "id": "rt_06",
+      "text": "penjualan minggu ini berapa totalnya?",
+      "expected": "question",
+      "actual": "question",
+      "match": true
+    },
+    {
+      "id": "rt_07",
+      "text": "barang apa yang paling laku?",
+      "expected": "question",
+      "actual": "question",
+      "match": true
+    },
+    {
+      "id": "rt_08",
+      "text": "laba rugi bulan ini bagaimana?",
+      "expected": "question",
+      "actual": "question",
+      "match": true
+    },
+    {
+      "id": "rt_09",
+      "text": "halo bro selamat pagi",
+      "expected": "other",
+      "actual": "other",
+      "match": true
+    },
+    {
+      "id": "rt_10",
+      "text": "lagi ngapain bot?",
+      "expected": "other",
+      "actual": "other",
+      "match": true
+    },
+    {
+      "id": "rt_11",
+      "text": "besok cuaca cerah nggak ya?",
+      "expected": "other",
+      "actual": "other",
+      "match": true
+    },
+    {
+      "id": "rt_12",
+      "text": "terima kasih infonya",
+      "expected": "other",
+      "actual": "other",
+      "match": true
+    }
+  ],
+  "transactions_details": [
+    {
+      "id": "tx_01",
+      "text": "laku pelet jitu 2 bungkus",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_02",
+      "text": "terjual senar litecate 1 roll harga 35000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 1,
+            "unit_price": 35000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 1,
+            "unit_price": "35000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_03",
+      "text": "umpan pak ikin 3 bks cash",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_04",
+      "text": "keluar umpan tepung bogor 2 bungkus @7000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 2,
+            "unit_price": 7000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 2,
+            "unit_price": "7000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_05",
+      "text": "senar shino sharp line laku 1 gulung",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino sharp line",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino sharp line",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_06",
+      "text": "laku pelet jitu 5 bungkus",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 5,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 5,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_07",
+      "text": "jual senar litecate 2 roll",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_08",
+      "text": "beli pelet jitu 20 bungkus harga 2500 dari suplier",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 20,
+            "unit_price": 2500.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 20,
+            "unit_price": "2500"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_09",
+      "text": "kulakan umpan pak ikin 15 bungkus @4166",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 15,
+            "unit_price": 4166.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 15,
+            "unit_price": "4166"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_10",
+      "text": "masuk stok senar shino 10 rol harga satuan 29166",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 10,
+            "unit_price": 29166.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 10,
+            "unit_price": "29166"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_11",
+      "text": "tambah stok umpan tepung bogor 10 bks harga 5833",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 10,
+            "unit_price": 5833.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 10,
+            "unit_price": "5833"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_12",
+      "text": "kulak senar litecate n nylon 10 gulung harga 29166",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate n nylon",
+            "qty": 10,
+            "unit_price": 29166.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate n nylon",
+            "qty": 10,
+            "unit_price": "29166"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_13",
+      "text": "laku pelet jitu 1 bks dan umpan pak ikin 2 bks",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_14",
+      "text": "laku senar litecate 1 dan senar shino 1",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_15",
+      "text": "terjual umpan tepung bogor 1 bungkus 7000 dan pelet jitu 3 bungkus 3000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 1,
+            "unit_price": 7000.0
+          },
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 3,
+            "unit_price": 3000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan tepung bogor",
+            "qty": 1,
+            "unit_price": "7000"
+          },
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 3,
+            "unit_price": "3000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_16",
+      "text": "laku kail pancing nomor 7 isi 10 biji",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "kail pancing nomor 7",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "kail pancing nomor 7",
+            "qty": 10,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_17",
+      "text": "ada yang beli joran tegek 450",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "joran tegek 450",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "joran tegek",
+            "qty": 450,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_18",
+      "text": "terjual reel shimano siena 1",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "reel shimano siena",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "reel shimano siena",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_19",
+      "text": "pelet jitu laku 4 bungkus harga 3rb",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 4,
+            "unit_price": 3000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 4,
+            "unit_price": "3000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_20",
+      "text": "umpan pak ikin laku satu bungkus",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "umpan pak ikin",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_21",
+      "text": "laku shino sharp 2 gulung 35rb",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "shino sharp",
+            "qty": 2,
+            "unit_price": 35000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "shino sharp",
+            "qty": 2,
+            "unit_price": "35000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_22",
+      "text": "terjual litecate nylon 3 gulung",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "litecate nylon",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "litecate nylon",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_23",
+      "text": "tepung bogor laku 2 bks",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "tepung bogor",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "tepung bogor",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_24",
+      "text": "beli pelet jitu 50 bungkus seharga 2500 per bungkus",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 50,
+            "unit_price": 2500.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 50,
+            "unit_price": "2500"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_25",
+      "text": "restok pak ikin 20 bks @ 4100",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "pak ikin",
+            "qty": 20,
+            "unit_price": 4100.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "pak ikin",
+            "qty": 20,
+            "unit_price": "4100"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_26",
+      "text": "laku pelet jtu dua bks",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jtu",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jtu",
+            "qty": 2,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_27",
+      "text": "senar shino 1 roll 35.000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 1,
+            "unit_price": 35000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 1,
+            "unit_price": "35000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_28",
+      "text": "umpan bogor 3 bungkus",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan bogor",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 4,
+            "product_name_raw": "umpan bogor",
+            "qty": 3,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_29",
+      "text": "kulakan pelampung kayu 20 biji harga 5000",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "pelampung kayu",
+            "qty": 20,
+            "unit_price": 5000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": null,
+            "product_name_raw": "pelampung kayu",
+            "qty": 20,
+            "unit_price": "5000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_30",
+      "text": "laku pelet jitu 10 bungkus",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 10,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 10,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_31",
+      "text": "jual litecate 1 bungkus pelet jitu 1",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "litecate",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "litecate",
+            "qty": 1,
+            "unit_price": null
+          },
+          {
+            "product_id": 5,
+            "product_name_raw": "pelet jitu",
+            "qty": 1,
+            "unit_price": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "tx_32",
+      "text": "beli senar litecate 5 harga 29000 dan senar shino 5 harga 29000",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 5,
+            "unit_price": 29000.0
+          },
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 5,
+            "unit_price": 29000.0
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "senar litecate",
+            "qty": 5,
+            "unit_price": "29000"
+          },
+          {
+            "product_id": 2,
+            "product_name_raw": "senar shino",
+            "qty": 5,
+            "unit_price": "29000"
+          }
+        ]
+      }
+    }
+  ]
+}

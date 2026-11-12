@@ -22,7 +22,7 @@ Kode lebih sering dibaca daripada ditulis. Sistem yang dikembangkan bertahap dan
 
 ## Aturan yang dipakai di project ini
 - Ikuti PEP 8. Format dengan Black, cek dengan pylint, dan dua-duanya jalan di CI.
-- Nama function, variable, dan constant pakai bahasa Inggris yang deskriptif. Comment dan docstring pakai bahasa Indonesia yang natural.
+- Nama function, variable, dan constant pakai bahasa Inggris yang deskriptif. Docstring pakai bahasa Inggris. Inline comment pakai bahasa Indonesia yang natural.
 - Satu function satu tugas. Kalau butuh lebih dari 4 argumen, pertimbangkan pakai Pydantic model atau dataclass.
 - Jangan duplikasi logika. Perhitungan akuntansi (jurnal, stok, HPP) cuma ada di satu module.
 - Pilih solusi paling sederhana yang memenuhi spec. Jangan bikin abstraksi buat kebutuhan yang belum ada.

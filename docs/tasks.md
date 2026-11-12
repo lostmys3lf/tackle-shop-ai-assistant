@@ -5,7 +5,7 @@ Kerjakan berurutan, satu task per sesi. Cara pakai di Antigravity:
 
 Status: `[ ]` belum, `[x]` selesai.
 
-## Task 1: Docker Compose lengkap `[ ]`
+## Task 1: Docker Compose lengkap `[x]`
 Tambahkan service `n8n` dan `api` ke `docker-compose.yml` yang sudah ada (Postgres sudah ada, jangan diubah selain yang perlu). `api` berisi FastAPI minimal dengan `GET /health`.
 Selesai kalau:
 - `docker compose up -d` menjalankan `postgres`, `n8n`, dan `api` tanpa error, dan healthcheck semuanya sehat.
@@ -13,43 +13,43 @@ Selesai kalau:
 - UI n8n terbuka di `http://localhost:5678`, dan data n8n tersimpan di volume (nggak hilang setelah restart).
 - `.env.example` diperbarui dengan variable baru.
 
-## Task 2: Setup MCP (dikerjakan Jef) `[ ]`
+## Task 2: Setup MCP (dikerjakan Jef) `[x]`
 Sambungkan MCP Postgres dan MCP n8n di Antigravity ke service dari Task 1.
 Selesai kalau: agent bisa membaca daftar tabel Postgres dan daftar workflow n8n lewat MCP.
 
-## Task 3: Schema, migration, dan seed `[ ]`
+## Task 3: Schema, migration, dan seed `[x]`
 Bikin tabel sesuai spec bagian 7, seed bagan akun, dan seed produk dari `db/seed/products.csv` beserta jurnal stok awal.
 Selesai kalau:
 - Migration jalan dari database kosong.
 - Seed produk membuat transaksi `opening`, stock movement, dan jurnal stok awal yang seimbang.
 - Kalau `products.csv` masih kosong, seed berhenti dengan pesan yang jelas, bukan error acak.
 
-## Task 4: Logika akuntansi `[ ]`
-Implementasi aturan spec bagian 8 di `app/accounting/` sebagai kode murni (tanpa LLM).
+## Task 4: Logika akuntansi `[x]`
+Implementasi aturan spec bagian 8 di `app/domain/accounting/` sebagai kode murni (tanpa LLM, database, atau FastAPI).
 Selesai kalau `uv run pytest` lulus dengan test minimal:
 - Jurnal pembelian dan penjualan seimbang.
 - Contoh HPP rata-rata di spec menghasilkan angka yang sama persis.
 - Penjualan melebihi stok ditolak.
 - Transaksi `pending` nggak mengubah stok dan jurnal.
 
-## Task 5: Client LLM `[ ]`
-Client tunggal di `app/llm/` untuk endpoint kompatibel OpenAI: model utama dan fallback dari env, timeout, retry dengan jeda saat 429, validasi output Pydantic, dan tracing Langfuse (aktif hanya kalau env Langfuse diisi).
+## Task 5: Client LLM `[x]`
+Client tunggal di `app/infrastructure/llm/` untuk endpoint kompatibel OpenAI: model utama dan fallback dari env, timeout, retry dengan jeda saat 429, validasi output Pydantic, dan tracing Langfuse (aktif hanya kalau env Langfuse diisi).
 Selesai kalau:
 - Test dengan mock membuktikan: retry saat 429, pindah ke fallback saat model utama gagal, dan error yang jelas saat semuanya gagal.
 - Satu panggilan LLM sungguhan muncul sebagai trace di Langfuse.
 
-## Task 6: Router jenis pesan `[ ]`
+## Task 6: Router jenis pesan `[x]`
 Klasifikasi pesan jadi `sale`, `purchase`, `question`, `other`. Provider dipilih lewat `ROUTER_PROVIDER`: Jev (Cloudflare Workers AI) atau LLM.
 Selesai kalau kedua provider bisa dipanggil lewat interface yang sama, dan provider Jev otomatis jatuh ke LLM kalau gagal.
 
-## Task 7: Ekstraksi dan endpoint transaksi `[ ]`
+## Task 7: Ekstraksi dan endpoint transaksi `[x]`
 `POST /messages` untuk penjualan dan pembelian, `POST /transactions/{id}/confirm`, dan `POST /transactions/{id}/reject`, sesuai spec bagian 9 dan 10. Prompt di `prompts/` dan didaftarkan ke prompt management Langfuse.
 Selesai kalau:
 - Chat penjualan menghasilkan transaksi `pending` dan teks konfirmasi yang benar.
 - Confirm menjalankan logika akuntansi Task 4 dan mengembalikan sisa stok.
 - Produk yang nggak dikenali menghasilkan pertanyaan balik, bukan transaksi.
 
-## Task 8: Eval dan CI `[ ]`
+## Task 8: Eval dan CI `[x]`
 Dataset minimal 30 contoh di `evals/datasets/`, runner `evals/run_eval.py`, dan workflow GitHub Actions sesuai spec bagian 13 dan 14.
 Selesai kalau eval jalan sampai selesai tanpa kena limit Groq, menampilkan akurasi per field, tercatat sebagai dataset run di Langfuse, dan CI lulus di GitHub. Ini memenuhi MLOps maturity Level 1 di spec bagian 17.
 

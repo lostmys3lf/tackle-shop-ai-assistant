@@ -1,0 +1,12 @@
+{"id": "rt_01", "text": "laku pelet jitu 2 bks", "expected_intent": "sale"}
+{"id": "rt_02", "text": "terjual senar litecate 1 roll harga 35000", "expected_intent": "sale"}
+{"id": "rt_03", "text": "beli pelet jitu 20 bungkus harga 2500", "expected_intent": "purchase"}
+{"id": "rt_04", "text": "kulakan umpan pak ikin 15 bungkus", "expected_intent": "purchase"}
+{"id": "rt_05", "text": "stok pelet jitu sisa berapa?", "expected_intent": "question"}
+{"id": "rt_06", "text": "penjualan minggu ini berapa totalnya?", "expected_intent": "question"}
+{"id": "rt_07", "text": "barang apa yang paling laku?", "expected_intent": "question"}
+{"id": "rt_08", "text": "laba rugi bulan ini bagaimana?", "expected_intent": "question"}
+{"id": "rt_09", "text": "halo bro selamat pagi", "expected_intent": "other"}
+{"id": "rt_10", "text": "lagi ngapain bot?", "expected_intent": "other"}
+{"id": "rt_11", "text": "besok cuaca cerah nggak ya?", "expected_intent": "other"}
+{"id": "rt_12", "text": "terima kasih infonya", "expected_intent": "other"}
