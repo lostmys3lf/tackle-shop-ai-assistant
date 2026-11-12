@@ -25,18 +25,24 @@ ERROR_HINTS = {
 
 
 def check_env():
-    missing = [name for name, value in [
-        ("LLM_BASE_URL", BASE_URL),
-        ("LLM_API_KEY", API_KEY),
-        ("LLM_MODEL", MODEL),
-    ] if not value]
+    missing = [
+        name
+        for name, value in [
+            ("LLM_BASE_URL", BASE_URL),
+            ("LLM_API_KEY", API_KEY),
+            ("LLM_MODEL", MODEL),
+        ]
+        if not value
+    ]
     if missing:
         print(f"[GAGAL] Variable belum diisi di .env: {', '.join(missing)}")
         sys.exit(1)
 
 
 def print_error(response):
-    hint = ERROR_HINTS.get(response.status_code, "Error lain, cek isi response di bawah.")
+    hint = ERROR_HINTS.get(
+        response.status_code, "Error lain, cek isi response di bawah."
+    )
     print(f"[GAGAL] Status {response.status_code}: {hint}")
     print(response.text[:500])
 
