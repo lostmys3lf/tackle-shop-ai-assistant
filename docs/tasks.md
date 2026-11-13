@@ -65,7 +65,7 @@ Selesai kalau pertanyaan stok, penjualan per periode, dan barang terlaris dijawa
 Endpoint laporan di spec bagian 9 dan workflow n8n 3 sampai 5. Jam pengiriman masih `TBD`, jadi pakai jam sementara yang mudah diubah.
 Selesai kalau ketiga laporan bisa dipicu manual dari n8n dan isinya cocok dengan data.
 
-## Task 12: Monitoring `[ ]`
+## Task 12: Monitoring `[x]`
 `GET /metrics`, service Prometheus dan Grafana di Docker Compose, dan satu dashboard sesuai spec bagian 13.
 Selesai kalau dashboard menampilkan data setelah beberapa pesan dikirim.
 

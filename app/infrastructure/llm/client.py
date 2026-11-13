@@ -23,6 +23,12 @@ from app.infrastructure.llm.exceptions import (
     LLMRateLimitError,
     LLMValidationError,
 )
+from app.infrastructure.monitoring.metrics import (
+    LLMCallMetric,
+    record_fallback,
+    record_llm_call,
+    record_llm_parse_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -177,11 +183,32 @@ class LLMClient:
                 trace_metadata["prompt_version"] = request.prompt_version
             kwargs["metadata"] = trace_metadata
 
+        operation = request.name or "llm_call"
         while True:
+            started_at = time.monotonic()
             try:
                 response = self._client.chat.completions.create(**kwargs)
+                prompt_tokens, completion_tokens = self._extract_token_usage(response)
+                record_llm_call(
+                    LLMCallMetric(
+                        operation=operation,
+                        model=model,
+                        status="success",
+                        latency_seconds=time.monotonic() - started_at,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                    )
+                )
                 return response.choices[0].message
             except openai.RateLimitError as exc:
+                record_llm_call(
+                    LLMCallMetric(
+                        operation=operation,
+                        model=model,
+                        status="rate_limit",
+                        latency_seconds=time.monotonic() - started_at,
+                    )
+                )
                 retries += 1
                 if retries > self.config.max_rate_limit_retries:
                     logger.error(
@@ -203,6 +230,14 @@ class LLMClient:
                 time.sleep(current_delay)
                 current_delay *= 2.0
             except Exception as exc:  # pylint: disable=broad-exception-caught
+                record_llm_call(
+                    LLMCallMetric(
+                        operation=operation,
+                        model=model,
+                        status="error",
+                        latency_seconds=time.monotonic() - started_at,
+                    )
+                )
                 logger.error("Panggilan LLM gagal untuk model %s: %s", model, exc)
                 raise LLMError(f"LLM call failed for model '{model}': {exc}") from exc
 
@@ -230,6 +265,11 @@ class LLMClient:
                 self.primary_model,
                 exc,
                 self.fallback_model,
+            )
+            record_fallback(
+                component="llm_client",
+                from_target=self.primary_model,
+                to_target=self.fallback_model,
             )
 
         try:
@@ -274,6 +314,18 @@ class LLMClient:
 
         return LLMToolResponse(content=content, tool_calls=tool_calls)
 
+    @staticmethod
+    def _extract_token_usage(response: Any) -> tuple[int, int]:
+        """Safely extract prompt and completion token counts from provider response."""
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return 0, 0
+        raw_prompt = getattr(usage, "prompt_tokens", 0)
+        raw_completion = getattr(usage, "completion_tokens", 0)
+        prompt_tokens = raw_prompt if isinstance(raw_prompt, int) else 0
+        completion_tokens = raw_completion if isinstance(raw_completion, int) else 0
+        return prompt_tokens, completion_tokens
+
     def generate_with_tools(self, request: LLMRequest) -> LLMToolResponse:
         """Generate completion supporting OpenAI tool calls with fallback and tracing."""
         return self._run_with_fallback(
@@ -297,6 +349,10 @@ class LLMClient:
         try:
             return response_model.model_validate_json(raw_text)
         except (ValidationError, json.JSONDecodeError) as exc:
+            record_llm_parse_failure(
+                operation=request.name or "structured",
+                model=model,
+            )
             raise LLMValidationError(
                 f"Validasi output Pydantic gagal untuk model '{model}': {exc}."
             ) from exc
@@ -339,6 +395,11 @@ class LLMClient:
             )
 
         # 2. Coba model fallback jika model utama gagal panggil atau gagal validasi
+        record_fallback(
+            component="llm_client",
+            from_target=self.primary_model,
+            to_target=self.fallback_model,
+        )
         try:
             return self._execute_and_validate(
                 self.fallback_model, request, response_model

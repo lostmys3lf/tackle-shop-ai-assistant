@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from app.config import Settings, settings as default_settings
 from app.infrastructure.llm.client import LLMClient, LLMRequest, get_llm_client
 from app.infrastructure.llm.exceptions import LLMError
+from app.infrastructure.monitoring.metrics import record_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +220,11 @@ class FallbackMessageRouter(BaseMessageRouter):
                 self.primary.__class__.__name__,
                 exc,
                 self.fallback.__class__.__name__,
+            )
+            record_fallback(
+                component="router",
+                from_target=self.primary.__class__.__name__,
+                to_target=self.fallback.__class__.__name__,
             )
             return self.fallback.route(text)
 

@@ -17,6 +17,7 @@ from app.infrastructure.db.repositories import (
     ProductRepository,
     TransactionRepository,
 )
+from app.infrastructure.monitoring.metrics import record_transaction_event
 
 
 class TransactionServiceError(Exception):
@@ -89,6 +90,7 @@ def confirm_transaction(tx_id: int) -> dict[str, Any]:
             raise TransactionServiceError("Gagal memproses akuntansi transaksi.")
 
         tx_repo.save_confirmed_transaction(tx.id, result)
+        record_transaction_event(tx.type, TransactionStatus.CONFIRMED.value)
 
         remaining_stock = [
             {
@@ -125,6 +127,8 @@ def reject_transaction(tx_id: int) -> dict[str, Any]:
             )
 
         tx_repo.reject_transaction(tx.id)
+        tx_type = str(getattr(tx, "type", None) or "unknown")
+        record_transaction_event(tx_type, TransactionStatus.REJECTED.value)
 
         return {
             "transaction_id": tx.id,

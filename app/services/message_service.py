@@ -5,7 +5,12 @@
 from decimal import Decimal
 from typing import Any
 
-from app.domain.models import DomainProduct, TransactionSource, TransactionType
+from app.domain.models import (
+    DomainProduct,
+    TransactionSource,
+    TransactionStatus,
+    TransactionType,
+)
 from app.infrastructure.db.connection import get_session
 from app.infrastructure.db.repositories import (
     MessageRepository,
@@ -22,6 +27,10 @@ from app.infrastructure.llm.router import (
     BaseMessageRouter,
     MessageIntent,
     get_message_router,
+)
+from app.infrastructure.monitoring.metrics import (
+    record_message_processed,
+    record_transaction_event,
 )
 from app.services.agent_service import AgentService
 from app.services.formatting import format_rupiah
@@ -148,6 +157,7 @@ class MessageService:
                     MessageIntent.OTHER.value,
                     Decimal("1.0000"),
                 )
+                record_message_processed(MessageIntent.OTHER.value)
                 return {
                     "intent": MessageIntent.OTHER.value,
                     "reply_text": WELCOME_MESSAGE,
@@ -176,6 +186,7 @@ class MessageService:
                 )
 
             msg_repo.update_reply(msg.id, reply, intent.value, confidence)
+            record_message_processed(intent.value)
             return {
                 "intent": intent.value,
                 "reply_text": reply,
@@ -265,6 +276,7 @@ class MessageService:
             raw_text=clean_text,
             items=items_payload,
         )
+        record_transaction_event(tx_type.value, TransactionStatus.PENDING.value)
 
         # Susun teks konfirmasi template
         reply = _build_confirmation_text(tx_type, matched_items, warnings)
