@@ -75,7 +75,7 @@ class LLMMessageRouter(BaseMessageRouter):
             prompt_version="router_v1",
             name="message_intent_routing",
             temperature=0.0,
-            max_tokens=250,
+            max_tokens=1000,
         )
         return self.client.generate_structured(req, MessageRoutingResult)
 

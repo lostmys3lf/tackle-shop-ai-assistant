@@ -8,7 +8,9 @@ ATURAN EKSTRAKSI:
 1. Tentukan "type":
    - "sale": Penjualan barang ke pelanggan (misal: "laku pelet 2", "jual senar 1 roll", "keluar umpan").
    - "purchase": Pembelian stok / kulakan dari supplier (misal: "beli pelet 10", "masuk stok senar 5").
-2. Untuk setiap barang dalam transaksi, ekstrak ke dalam "items":
+   - "mixed": Jika dalam satu pesan terdapat penjualan DAN pembelian sekaligus (misal: "laku pelet 2 dan beli senar 5" atau "jual umpan 1, kulakan kail 10"). Satu chat hanya untuk satu jenis transaksi.
+2. Jika "type" adalah "mixed", WAJIB isi "items" dengan array kosong [].
+3. Jika "type" adalah "sale" atau "purchase", ekstrak semua barang dalam pesan (termasuk jika dipisahkan koma ",", kata "dan", atau baris baru) ke dalam "items":
    - "product_id": ID integer produk dari DAFTAR PRODUK RESMI di atas yang paling cocok dengan barang yang dimaksud. Jika barang tidak dikenali, ragu, atau tidak terdaftar, WAJIB diisi null.
    - "product_name_raw": Nama barang persis seperti yang tertulis pada teks pengguna.
    - "qty": Jumlah barang berupa integer (minimal 1).
@@ -16,7 +18,7 @@ ATURAN EKSTRAKSI:
 
 Format keluaran WAJIB berupa JSON valid dengan skema:
 {
-  "type": "sale" | "purchase",
+  "type": "sale" | "purchase" | "mixed",
   "items": [
     {
       "product_id": 1,

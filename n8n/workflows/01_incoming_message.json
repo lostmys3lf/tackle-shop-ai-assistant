@@ -1,0 +1,726 @@
+[
+  {
+    "updatedAt": "2026-11-13T10:37:50.806Z",
+    "createdAt": "2026-11-13T06:11:06.214Z",
+    "id": "8BTnG1dgWGLOK0ZV",
+    "name": "1 - Pesan Masuk Telegram",
+    "description": "Menerima update Telegram, mengecek allowlist pemilik, meneruskan pesan ke POST /messages atau callback ke sub-workflow konfirmasi.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "7029b8ae-f082-45a0-ac1a-446275c8baf2",
+        "name": "Telegram Trigger",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.5,
+        "position": [
+          0,
+          192
+        ],
+        "parameters": {
+          "updates": [
+            "message",
+            "callback_query"
+          ],
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "37e224bb-ef73-4559-a9ee-c913da2d96da"
+      },
+      {
+        "id": "816b492f-febe-4e4d-85bc-9ee7ca0f8777",
+        "name": "Allowlist Pemilik",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          224,
+          192
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "owner-allowlist-check",
+                "leftValue": "={{ String($json.message?.chat?.id ?? $json.callback_query?.message?.chat?.id ?? $json.callback_query?.from?.id ?? \"\") }}",
+                "rightValue": "1191657048",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "7f96d050-3e8d-427e-a309-f484eba2ba64",
+        "name": "Callback Tombol?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          448,
+          96
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "is-callback-query",
+                "leftValue": "={{ $json.callback_query ? \"callback\" : \"message\" }}",
+                "rightValue": "callback",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "db13dba7-2ee8-4988-a86a-3a8014126ab0",
+        "name": "Jalankan Konfirmasi Transaksi",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.4,
+        "position": [
+          832,
+          0
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "SGo4lzoS6pzeDc03"
+          }
+        }
+      },
+      {
+        "id": "1e322b9f-6cdc-4a1f-aa27-ce86aacd1051",
+        "name": "Panggil POST /messages",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          880,
+          416
+        ],
+        "parameters": {
+          "authentication": "genericCredentialType",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "channel",
+                "value": "telegram"
+              },
+              {
+                "name": "chat_id",
+                "value": "={{ String($('Telegram Trigger').item.json.message?.chat?.id ?? \"\") }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ String($('Telegram Trigger').item.json.message?.text ?? $('Telegram Trigger').item.json.message?.caption ?? \"\") }}"
+              }
+            ]
+          },
+          "contentType": "json",
+          "genericAuthType": "httpHeaderAuth",
+          "method": "POST",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          },
+          "sendBody": true,
+          "specifyBody": "keypair",
+          "url": "http://api:8000/messages"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        }
+      },
+      {
+        "id": "2ac8e3de-b42d-401d-8833-b5df06ef730b",
+        "name": "Normalisasi Balasan API",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          1104,
+          416
+        ],
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "reply-text",
+                "name": "replyText",
+                "type": "string",
+                "value": "={{ $json.statusCode === 200 ? ($json.body?.reply_text ?? \"Tidak ada balasan.\") : (\"Maaf, gagal memproses pesan: \" + ($json.body?.detail ?? \"error \" + ($json.statusCode ?? \"jaringan\"))) }}"
+              },
+              {
+                "id": "pending-tx-id",
+                "name": "pendingTransactionId",
+                "type": "string",
+                "value": "={{ ($json.statusCode === 200 && $json.body?.pending_transaction_id != null) ? String($json.body.pending_transaction_id) : \"\" }}"
+              },
+              {
+                "id": "reply-chat-id",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($('Telegram Trigger').item.json.message?.chat?.id ?? \"\") }}"
+              },
+              {
+                "id": "loading-msg-id",
+                "name": "loadingMessageId",
+                "type": "string",
+                "value": "={{ $('Kirim Pesan Memproses').item.json?.result?.message_id ? String($('Kirim Pesan Memproses').item.json.result.message_id) : \"\" }}"
+              }
+            ]
+          },
+          "includeOtherFields": false,
+          "mode": "manual"
+        }
+      },
+      {
+        "id": "9c246576-2ed7-4c5e-8526-a30a25372c58",
+        "name": "Butuh Konfirmasi?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          1328,
+          416
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-pending-tx",
+                "leftValue": "={{ $json.pendingTransactionId ? \"yes\" : \"no\" }}",
+                "rightValue": "yes",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "5880c23b-fa53-4121-804f-285678c5a63d",
+        "name": "Kirim Konfirmasi + Tombol",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2032,
+          336
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "={{ String($json.chatId) }}",
+          "text": "={{ $json.replyText }}",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Benar",
+                      "additionalFields": {
+                        "callback_data": "=confirm:{{ $json.pendingTransactionId }}"
+                      }
+                    },
+                    {
+                      "text": "Salah",
+                      "additionalFields": {
+                        "callback_data": "=reject:{{ $json.pendingTransactionId }}"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "3b2c99c5-e8e1-45c4-b1f4-83ceecf71da6",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "ab23af39-0865-439f-bd96-0dac32e1cb31",
+        "name": "Kirim Balasan Biasa",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2032,
+          592
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "={{ String($json.chatId) }}",
+          "text": "={{ $json.replyText }}",
+          "replyMarkup": "none",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "9d1d4747-f87f-483c-9aab-711a431d2ead",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "6d39a88a-b0d6-42ee-839f-47b06f17609b",
+        "name": "Abaikan Bukan Pemilik",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          448,
+          288
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "12e3e7ce-d530-4e34-9953-01fe2e730be6",
+        "name": "Kirim Pesan Memproses",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          656,
+          416
+        ],
+        "parameters": {
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "chatId": "={{ String($('Telegram Trigger').item.json.message?.chat?.id ?? '') }}",
+          "operation": "sendMessage",
+          "replyMarkup": "none",
+          "resource": "message",
+          "text": "⏳ Sebentar ya, sedang memproses pesan..."
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500,
+        "webhookId": "115cf5b5-0b12-4fac-8d35-7f5900e3cf7d"
+      },
+      {
+        "id": "98158387-c700-49db-8388-6f09c2535331",
+        "name": "Ada Loading Konfirmasi?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          1552,
+          320
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-loading-msg-1",
+                "leftValue": "={{ $json.loadingMessageId ? \"yes\" : \"no\" }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "yes"
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "b8dca964-38fa-481b-baa4-e9777970f338",
+        "name": "Ada Loading Biasa?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          1552,
+          512
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-loading-msg-2",
+                "leftValue": "={{ $json.loadingMessageId ? \"yes\" : \"no\" }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "yes"
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "f2b5ab1c-c268-422c-8c72-773fa1d4c408",
+        "name": "Edit Konfirmasi + Tombol",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1792,
+          224
+        ],
+        "parameters": {
+          "additionalFields": {},
+          "chatId": "={{ String($json.chatId) }}",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "=confirm:{{ $json.pendingTransactionId }}"
+                      },
+                      "text": "Benar"
+                    },
+                    {
+                      "additionalFields": {
+                        "callback_data": "=reject:{{ $json.pendingTransactionId }}"
+                      },
+                      "text": "Salah"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "messageId": "={{ String($json.loadingMessageId) }}",
+          "messageType": "message",
+          "operation": "editMessageText",
+          "replyMarkup": "inlineKeyboard",
+          "resource": "message",
+          "text": "={{ $json.replyText }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueErrorOutput",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500,
+        "webhookId": "cc79d7a8-df4c-4d87-927d-479ca6c8a81e"
+      },
+      {
+        "id": "d86b5442-48c7-4ed7-8995-1075686fc301",
+        "name": "Edit Balasan Biasa",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1792,
+          480
+        ],
+        "parameters": {
+          "additionalFields": {},
+          "chatId": "={{ String($json.chatId) }}",
+          "messageId": "={{ String($json.loadingMessageId) }}",
+          "messageType": "message",
+          "operation": "editMessageText",
+          "replyMarkup": "none",
+          "resource": "message",
+          "text": "={{ $json.replyText }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueErrorOutput",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500,
+        "webhookId": "683586df-72f6-4007-8fe6-44866bedcd2d"
+      }
+    ],
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Allowlist Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Allowlist Pemilik": {
+        "main": [
+          [
+            {
+              "node": "Callback Tombol?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Abaikan Bukan Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Callback Tombol?": {
+        "main": [
+          [
+            {
+              "node": "Jalankan Konfirmasi Transaksi",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Kirim Pesan Memproses",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Panggil POST /messages": {
+        "main": [
+          [
+            {
+              "node": "Normalisasi Balasan API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Normalisasi Balasan API": {
+        "main": [
+          [
+            {
+              "node": "Butuh Konfirmasi?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kirim Pesan Memproses": {
+        "main": [
+          [
+            {
+              "node": "Panggil POST /messages",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Butuh Konfirmasi?": {
+        "main": [
+          [
+            {
+              "node": "Ada Loading Konfirmasi?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ada Loading Biasa?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ada Loading Konfirmasi?": {
+        "main": [
+          [
+            {
+              "node": "Edit Konfirmasi + Tombol",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Kirim Konfirmasi + Tombol",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Konfirmasi + Tombol": {
+        "main": [
+          null,
+          [
+            {
+              "node": "Kirim Konfirmasi + Tombol",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ada Loading Biasa?": {
+        "main": [
+          [
+            {
+              "node": "Edit Balasan Biasa",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Kirim Balasan Biasa",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Balasan Biasa": {
+        "main": [
+          null,
+          [
+            {
+              "node": "Kirim Balasan Biasa",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true
+    },
+    "staticData": null,
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [
+      {
+        "id": "49c1e701-69ca-4810-a19a-3860238cb44f",
+        "name": "Panggil API Pesan",
+        "nodeIds": [
+          "12e3e7ce-d530-4e34-9953-01fe2e730be6",
+          "1e322b9f-6cdc-4a1f-aa27-ce86aacd1051",
+          "2ac8e3de-b42d-401d-8833-b5df06ef730b"
+        ],
+        "description": "Mengirim status tunggu, memanggil POST /messages, dan menormalisasi balasan API"
+      },
+      {
+        "id": "ddc1f2de-7a18-4625-b0af-a39ae75c7e73",
+        "name": "Balas Konfirmasi Transaksi",
+        "nodeIds": [
+          "98158387-c700-49db-8388-6f09c2535331",
+          "f2b5ab1c-c268-422c-8c72-773fa1d4c408",
+          "5880c23b-fa53-4121-804f-285678c5a63d"
+        ],
+        "description": "Mengedit pesan loading atau mengirim baru dengan tombol Benar/Salah"
+      },
+      {
+        "id": "c88a2965-98f4-46b8-9d02-5846ca2e5b68",
+        "name": "Balas Teks Biasa",
+        "nodeIds": [
+          "b8dca964-38fa-481b-baa4-e9777970f338",
+          "d86b5442-48c7-4ed7-8995-1075686fc301",
+          "ab23af39-0865-439f-bd96-0dac32e1cb31"
+        ],
+        "description": "Mengedit pesan loading atau mengirim balasan teks biasa"
+      }
+    ],
+    "pinData": null,
+    "versionId": "8c5c82f9-8cb6-40fb-815c-dd908652c146",
+    "activeVersionId": "8c5c82f9-8cb6-40fb-815c-dd908652c146",
+    "versionCounter": 3,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Group processing & reply stages",
+      "description": "Organize processing and reply nodes into clean canvas groups"
+    }
+  }
+]

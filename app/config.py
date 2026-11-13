@@ -38,7 +38,7 @@ class Settings:  # pylint: disable=too-many-instance-attributes
     cloudflare_api_token: str = os.getenv("CLOUDFLARE_API_TOKEN", "")
 
     # Security settings
-    api_secret: str = os.getenv("API_SECRET", "dev-secret-key")
+    api_secret: str = os.getenv("API_SECRET", "")
 
     @property
     def database_url(self) -> str:

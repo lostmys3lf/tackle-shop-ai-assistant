@@ -19,8 +19,9 @@ COPY pyproject.toml uv.lock ./
 # Install dependensi tanpa dev dependencies
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Salin kode aplikasi
+# Salin kode aplikasi dan prompt LLM
 COPY app/ ./app/
+COPY prompts/ ./prompts/
 
 # Install project
 RUN uv sync --frozen --no-dev

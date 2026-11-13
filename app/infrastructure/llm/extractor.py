@@ -3,11 +3,12 @@
 # pylint: disable=too-few-public-methods
 
 from decimal import Decimal
+from enum import Enum
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from app.domain.models import DomainProduct, TransactionType
+from app.domain.models import DomainProduct
 from app.infrastructure.llm.client import LLMClient, LLMRequest, get_llm_client
 
 DEFAULT_PROMPT_PATH = (
@@ -15,6 +16,14 @@ DEFAULT_PROMPT_PATH = (
     / "prompts"
     / "extraction_v1.txt"
 )
+
+
+class ExtractedTransactionType(str, Enum):
+    """Transaction categories returned by the LLM extractor."""
+
+    SALE = "sale"
+    PURCHASE = "purchase"
+    MIXED = "mixed"
 
 
 class ExtractedItem(BaseModel):
@@ -29,7 +38,7 @@ class ExtractedItem(BaseModel):
 class ExtractedTransaction(BaseModel):
     """Structured transaction data extracted from chat text."""
 
-    type: TransactionType
+    type: ExtractedTransactionType
     items: list[ExtractedItem] = Field(default_factory=list)
 
 
@@ -87,7 +96,7 @@ class TransactionExtractor:
             prompt_version="extraction_v1",
             name="transaction_extraction",
             temperature=0.0,
-            max_tokens=500,
+            max_tokens=1500,
         )
 
         return self.client.generate_structured(req, ExtractedTransaction)

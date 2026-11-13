@@ -1,0 +1,546 @@
+[
+  {
+    "updatedAt": "2026-11-13T10:26:47.530Z",
+    "createdAt": "2026-11-13T06:10:18.335Z",
+    "id": "SGo4lzoS6pzeDc03",
+    "name": "2 - Konfirmasi Transaksi Telegram",
+    "description": "Memproses callback tombol Benar/Salah dari Telegram, memanggil confirm/reject FastAPI, dan membalas hasilnya ke pemilik.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "abcbed59-6793-49ff-92c7-19e56c450219",
+        "name": "Callback Trigger",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          0,
+          192
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      },
+      {
+        "id": "4a480617-ccec-43ff-ae92-995c6c036fee",
+        "name": "Allowlist Pemilik",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          224,
+          192
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "owner-callback-check",
+                "leftValue": "={{ String($json.callback_query?.from?.id ?? $json.callback_query?.message?.chat?.id ?? \"\") }}",
+                "rightValue": "1191657048",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "d328778f-3169-477c-a266-f1e47fb275fe",
+        "name": "Ekstrak Data Callback",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          448,
+          96
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "cb-id",
+                "name": "callbackQueryId",
+                "value": "={{ String($json.callback_query?.id ?? \"\") }}",
+                "type": "string"
+              },
+              {
+                "id": "chat-id",
+                "name": "chatId",
+                "value": "={{ String($json.callback_query?.message?.chat?.id ?? $json.callback_query?.from?.id ?? \"\") }}",
+                "type": "string"
+              },
+              {
+                "id": "msg-id",
+                "name": "messageId",
+                "value": "={{ String($json.callback_query?.message?.message_id ?? \"\") }}",
+                "type": "string"
+              },
+              {
+                "id": "orig-text",
+                "name": "originalText",
+                "value": "={{ String($json.callback_query?.message?.text ?? \"\") }}",
+                "type": "string"
+              },
+              {
+                "id": "action",
+                "name": "action",
+                "value": "={{ String($json.callback_query?.data ?? \"\").split(\":\")[0] ?? \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "tx-id",
+                "name": "txId",
+                "value": "={{ String($json.callback_query?.data ?? \"\").split(\":\")[1] ?? \"\" }}",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "7280ad3a-9673-4957-83ac-f069e41ca0b3",
+        "name": "Jawab Callback Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          672,
+          96
+        ],
+        "parameters": {
+          "resource": "callback",
+          "operation": "answerQuery",
+          "queryId": "={{ $json.callbackQueryId }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "019f4c88-5bc3-4b6e-a9e4-af4641f07951",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "137486dd-36a0-4c43-8077-82c84b722e20",
+        "name": "Tombol Benar?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          944,
+          320
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "is-confirm",
+                "leftValue": "={{ $('Ekstrak Data Callback').item.json.action }}",
+                "rightValue": "confirm",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "45fe7bde-2ebd-4006-bbfa-b702b6c8390d",
+        "name": "Panggil API Confirm",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1168,
+          224
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"http://api:8000/transactions/\" + $(\"Ekstrak Data Callback\").item.json.txId + \"/confirm\" }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        }
+      },
+      {
+        "id": "e342a1b5-8aef-42ce-af12-bcbf2a6d25af",
+        "name": "Format Hasil Konfirmasi",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          1392,
+          224
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "res-text-confirm",
+                "name": "resultText",
+                "value": "={{ $json.statusCode === 200 ? ($json.body?.summary_text ?? \"Transaksi berhasil dikonfirmasi.\") : (\"Konfirmasi gagal: \" + ($json.body?.detail ?? \"Terjadi kesalahan sistem.\")) }}",
+                "type": "string"
+              },
+              {
+                "id": "badge-confirm",
+                "name": "statusBadge",
+                "value": "={{ $json.statusCode === 200 ? \"Status: Dikonfirmasi\" : \"Status: Gagal dikonfirmasi\" }}",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "3b562fa8-d6ba-48e0-8a59-d04c3322cd67",
+        "name": "Siapkan Balasan",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1616,
+          320
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "33c9a53a-12b4-4d87-87f0-480ab3efffd0",
+        "name": "Panggil API Reject",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1168,
+          416
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "={{ \"http://api:8000/transactions/\" + $(\"Ekstrak Data Callback\").item.json.txId + \"/reject\" }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        }
+      },
+      {
+        "id": "4c47e492-ec61-475d-8d6c-ac30ae6096a1",
+        "name": "Format Hasil Penolakan",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          1392,
+          416
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "res-text-reject",
+                "name": "resultText",
+                "value": "={{ $json.statusCode === 200 ? ($json.body?.message ?? \"Transaksi dibatalkan.\") : (\"Pembatalan gagal: \" + ($json.body?.detail ?? \"Terjadi kesalahan sistem.\")) }}",
+                "type": "string"
+              },
+              {
+                "id": "badge-reject",
+                "name": "statusBadge",
+                "value": "={{ $json.statusCode === 200 ? \"Status: Dibatalkan\" : \"Status: Gagal dibatalkan\" }}",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "4785cfe6-9730-425f-8cc7-827c8ca041ff",
+        "name": "Abaikan Bukan Pemilik",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          448,
+          288
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "5b67bb9f-3b97-4061-bf95-3e16caadf7b7",
+        "name": "Kirim Hasil ke Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1424,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "={{ $('Ekstrak Data Callback').item.json.chatId }}",
+          "text": "={{ $json.resultText }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "76ae504f-1778-461e-adc6-33aebd1f9178",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "c60172bc-6988-45f8-9214-bbc9c9ac8895",
+        "name": "Hapus Tombol Pesan Lama",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1424,
+          192
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ $('Ekstrak Data Callback').item.json.chatId }}",
+          "messageId": "={{ $('Ekstrak Data Callback').item.json.messageId }}",
+          "replyMarkup": "none",
+          "text": "={{ $(\"Ekstrak Data Callback\").item.json.originalText + \"\\n\\n\" + $json.statusBadge }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "e798a86f-db92-49df-99eb-d269f45f3f24",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      }
+    ],
+    "connections": {
+      "Callback Trigger": {
+        "main": [
+          [
+            {
+              "node": "Allowlist Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Allowlist Pemilik": {
+        "main": [
+          [
+            {
+              "node": "Ekstrak Data Callback",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Abaikan Bukan Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ekstrak Data Callback": {
+        "main": [
+          [
+            {
+              "node": "Jawab Callback Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Jawab Callback Telegram": {
+        "main": [
+          [
+            {
+              "node": "Tombol Benar?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tombol Benar?": {
+        "main": [
+          [
+            {
+              "node": "Panggil API Confirm",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Panggil API Reject",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Panggil API Confirm": {
+        "main": [
+          [
+            {
+              "node": "Format Hasil Konfirmasi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Hasil Konfirmasi": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Balasan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Siapkan Balasan": {
+        "main": [
+          [
+            {
+              "node": "Kirim Hasil ke Telegram",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Hapus Tombol Pesan Lama",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Panggil API Reject": {
+        "main": [
+          [
+            {
+              "node": "Format Hasil Penolakan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Format Hasil Penolakan": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Balasan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true
+    },
+    "staticData": null,
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [
+      {
+        "id": "3d8e0dce-9425-4e1c-8ff5-c962a81efdc0",
+        "name": "Eksekusi Transaksi",
+        "nodeIds": [
+          "137486dd-36a0-4c43-8077-82c84b722e20",
+          "45fe7bde-2ebd-4006-bbfa-b702b6c8390d",
+          "e342a1b5-8aef-42ce-af12-bcbf2a6d25af",
+          "33c9a53a-12b4-4d87-87f0-480ab3efffd0",
+          "4c47e492-ec61-475d-8d6c-ac30ae6096a1",
+          "3b562fa8-d6ba-48e0-8a59-d04c3322cd67"
+        ],
+        "description": "Memanggil endpoint confirm/reject FastAPI dan memformat teks hasil"
+      },
+      {
+        "id": "21c97783-2a04-4f9e-a862-94eed961be44",
+        "name": "Validasi Callback",
+        "nodeIds": [
+          "d328778f-3169-477c-a266-f1e47fb275fe",
+          "7280ad3a-9673-4957-83ac-f069e41ca0b3"
+        ],
+        "description": "Mengekstrak metadata callback dan menghentikan indikator loading tombol Telegram"
+      }
+    ],
+    "pinData": null,
+    "versionId": "35c082a6-df0d-4822-adac-e2668dbef30e",
+    "activeVersionId": "35c082a6-df0d-4822-adac-e2668dbef30e",
+    "versionCounter": 2,
+    "triggerCount": 0,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Retry Telegram callback/send nodes",
+      "description": "Enable retry on Telegram callback and message nodes against transient TLS resets"
+    }
+  }
+]

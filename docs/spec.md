@@ -116,9 +116,10 @@ Teks konfirmasi dan balasan transaksi disusun penuh dari template di kode, tanpa
 
 ## 10. Ekstraksi
 - Prompt menyertakan daftar produk (id, nama, kategori) supaya LLM mengembalikan `product_id`.
+- Satu chat hanya untuk satu jenis transaksi. Jika pesan berisi penjualan dan pembelian sekaligus, ekstraktor mengembalikan `"type": "mixed"` dengan `"items": []`; transaksi tidak disimpan ke database dan bot membalas dengan template statis tanpa LLM agar pemilik memisahkannya menjadi dua chat.
 - Skema output:
   ```
-  {"type": "sale" | "purchase", "items": [{"product_id": int | null, "product_name_raw": str, "qty": int, "unit_price": number | null}]}
+  {"type": "sale" | "purchase" | "mixed", "items": [{"product_id": int | null, "product_name_raw": str, "qty": int, "unit_price": number | null}]}
   ```
 - `product_id` null: bot menanyakan barang mana yang dimaksud. Menambah produk baru lewat chat belum masuk versi pertama.
 - Foto nota: OCR jadi teks dulu, lalu lewat ekstraktor yang sama dengan jalur chat.
@@ -132,11 +133,17 @@ Tools read-only, semua angka dihitung SQL atau Python:
 
 ## 12. Workflow n8n
 Workflow diekspor ke `n8n/workflows/*.json` dan ikut di-commit.
-1. Pesan masuk: Telegram Trigger, cek allowlist pemilik, `POST /messages`, kirim balasan atau tombol konfirmasi (inline keyboard Telegram).
-2. Konfirmasi: callback dari tombol Benar / Salah, panggil confirm atau reject, kirim hasilnya.
+1. Pesan masuk: Telegram Trigger, cek allowlist pemilik, kirim status proses sementara (`"⏳ Sebentar ya, sedang memproses pesan..."`), panggil `POST /messages`, lalu ubah pesan sementara (`editMessageText`) menjadi balasan atau tombol konfirmasi (inline keyboard Telegram). Perintah `/start` mengembalikan panduan chat yang dikelompokkan per kategori produk (`peralatan`, `bahan_umpan`) serta contoh cek stok/laporan.
+2. Konfirmasi: callback dari tombol Benar / Salah, panggil confirm atau reject, kirim hasilnya dan hapus tombol pada pesan lama.
 3. Alert stok menipis (harian, jam `TBD`).
 4. Laporan penjualan (mingguan, jam `TBD`).
 5. Laba rugi sederhana (bulanan, jam `TBD`).
+
+Catatan pengembangan UX Telegram (dikerjakan setelah Task 11, saat seluruh endpoint laporan tersedia):
+- **Menu berjenjang hybrid (tombol inline + tetap bebas ketik langsung)**:
+  - `/start` menawarkan tombol menu utama: `Catat Transaksi`, `Lihat Laporan`, dan `Daftar Produk`.
+  - Submenu `Lihat Laporan` menampilkan daftar jenis laporan (stok menipis, penjualan, barang terlaris, laba rugi) atau tetap menerima pertanyaan bebas lewat Agent.
+  - Submenu `Daftar Produk` / kategori membagi produk berdasarkan `products.category` (`peralatan` dan `bahan_umpan`; butuh endpoint daftar produk seperti `GET /products` serta state menu).
 
 ## 13. LLMOps
 - Eval: `evals/datasets/*.jsonl` berisi minimal 30 contoh chat transaksi + JSON yang benar, plus contoh routing intent. Contoh pertanyaan agent ditambahkan di Task 10. Runner `evals/run_eval.py` menghitung akurasi per field dan gagal kalau di bawah threshold (awal 0,85, usulan). Pakai jeda antar panggilan karena limit token per menit.

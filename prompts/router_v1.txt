@@ -6,6 +6,8 @@ Tugas Anda adalah mengklasifikasikan teks pesan ke dalam salah satu dari 4 kateg
 3. "question": Pertanyaan mengenai data toko, sisa stok, omzet penjualan, atau laporan (misal: "sisa stok pelet berapa?", "hari ini laku berapa?", "apa barang terlaris?").
 4. "other": Percakapan umum, sapaan tanpa transaksi, atau hal di luar operasional toko (misal: "halo", "selamat pagi", "siapa namamu", "lagi apa").
 
+Catatan: Jika sebuah pesan menggabungkan penjualan dan pembelian sekaligus dalam satu chat, tetap klasifikasikan sebagai "sale" (bukan "other") agar masuk ke validasi transaksi.
+
 Format keluaran WAJIB berupa JSON valid dengan struktur:
 {
   "intent": "sale" | "purchase" | "question" | "other",

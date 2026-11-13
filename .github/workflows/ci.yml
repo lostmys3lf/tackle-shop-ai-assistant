@@ -37,4 +37,5 @@ jobs:
         env:
           # Key palsu khusus test; test unit nggak boleh memanggil LLM sungguhan
           LLM_API_KEY: test-dummy-key
+          API_SECRET: test-dummy-api-secret
         run: uv run pytest

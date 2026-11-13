@@ -53,7 +53,7 @@ Selesai kalau:
 Dataset minimal 30 contoh di `evals/datasets/`, runner `evals/run_eval.py`, dan workflow GitHub Actions sesuai spec bagian 13 dan 14.
 Selesai kalau eval jalan sampai selesai tanpa kena limit Groq, menampilkan akurasi per field, tercatat sebagai dataset run di Langfuse, dan CI lulus di GitHub. Ini memenuhi MLOps maturity Level 1 di spec bagian 17.
 
-## Task 9: Workflow n8n pesan dan konfirmasi `[ ]`
+## Task 9: Workflow n8n pesan dan konfirmasi `[x]`
 Channel: Telegram. Workflow 1 dan 2 di spec bagian 12. Butuh bot Telegram dari BotFather (dikerjakan Jef) dan webhook lewat Cloudflare Tunnel.
 Selesai kalau pemilik bisa mencatat penjualan dari HP, menekan Benar, dan menerima balasan sisa stok.
 
@@ -84,3 +84,7 @@ Selesai kalau satu perubahan prompt yang lulus eval otomatis sampai ke VM tanpa 
 ## Task 16: Promo barang nggak laku `[ ]`
 `POST /promo/slow-moving` dan workflow n8n mingguan.
 Selesai kalau caption dan saran bundling terkirim, dan semua angka di dalamnya berasal dari data.
+
+## Pengembangan UX lanjutan (setelah Task 11 selesai): Menu berjenjang Telegram `[ ]`
+Tambahan di luar backlog inti Tasks 1–16 (lihat `docs/spec.md` bagian 12): tambahkan navigasi tombol berjenjang hybrid dari `/start` (`Catat Transaksi`, `Lihat Laporan`, `Daftar Produk` per kategori `peralatan` / `bahan_umpan`) tanpa menghilangkan kemampuan chat bebas.
+Selesai kalau pemilik bisa memilih submenu laporan dan kategori produk lewat tombol maupun tetap mengetik chat langsung.

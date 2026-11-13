@@ -6,10 +6,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
-from app.domain.models import DomainProduct, TransactionType
-from app.infrastructure.llm.extractor import ExtractedItem, ExtractedTransaction
+from app.domain.models import DomainProduct
+from app.infrastructure.llm.extractor import (
+    ExtractedItem,
+    ExtractedTransaction,
+    ExtractedTransactionType,
+)
 from app.infrastructure.llm.router import MessageIntent, MessageRoutingResult
 from app.main import app
+from app.services.message_service import _format_currency
 
 client = TestClient(app)
 AUTH_HEADERS = {"X-API-Key": settings.api_secret}
@@ -38,6 +43,18 @@ def test_api_endpoints_require_valid_api_key():
     # Test POST /transactions/1/reject without key
     res4 = client.post("/transactions/1/reject")
     assert res4.status_code == 401
+
+
+def test_api_rejects_empty_server_api_secret():
+    """Verify protected endpoints fail fast when API_SECRET is not configured."""
+    with patch("app.api.security.settings") as mock_settings:
+        mock_settings.api_secret = ""
+        with pytest.raises(RuntimeError, match="API_SECRET is empty"):
+            client.post(
+                "/messages",
+                headers={"X-API-Key": "anything"},
+                json={"channel": "telegram", "chat_id": "1", "text": "halo"},
+            )
 
 
 def test_post_messages_intent_other():
@@ -69,8 +86,50 @@ def test_post_messages_intent_other():
             assert res.status_code == 200
             data = res.json()
             assert data["intent"] == "other"
-            assert "bot pencatatan" in data["reply_text"]
+            assert "bot pencatatan Toko Pancing Bapak" in data["reply_text"]
             assert data["pending_transaction_id"] is None
+
+
+def test_post_messages_start_command_returns_welcome_without_llm():
+    """Verify /start returns welcome guide without invoking LLM router."""
+    with patch("app.services.message_service.get_session") as mock_session_ctx:
+        mock_session = mock_session_ctx.return_value.__enter__.return_value
+        mock_session.add.return_value = None
+
+        with patch(
+            "app.services.message_service.get_message_router"
+        ) as mock_router_getter:
+            res = client.post(
+                "/messages",
+                headers=AUTH_HEADERS,
+                json={
+                    "channel": "telegram",
+                    "chat_id": "user123",
+                    "text": "/start",
+                },
+            )
+
+            mock_router_getter.return_value.route.assert_not_called()
+            assert res.status_code == 200
+            data = res.json()
+            assert data["intent"] == "other"
+            assert "Selamat datang di Asisten Toko Pancing Bapak" in data["reply_text"]
+            assert "Satu chat hanya untuk satu jenis transaksi" in data["reply_text"]
+            assert "Peralatan (" in data["reply_text"]
+            assert "Bahan Umpan (" in data["reply_text"]
+            assert "Cek Stok & Laporan:" in data["reply_text"]
+            assert "1. Peralatan" not in data["reply_text"]
+            assert "2. Bahan Umpan" not in data["reply_text"]
+            assert "3. Cek Stok" not in data["reply_text"]
+            assert "laku pelet jitu 2 bungkus" in data["reply_text"]
+            assert data["pending_transaction_id"] is None
+
+
+def test_format_currency_indonesian_no_decimals():
+    """Verify Rupiah currency formatting uses Indonesian dot grouping without decimals."""
+    assert _format_currency(Decimal("3000.00")) == "Rp3.000"
+    assert _format_currency(Decimal("1250000")) == "Rp1.250.000"
+    assert _format_currency(Decimal("0.00")) == "Rp0"
 
 
 def test_post_messages_intent_question():
@@ -145,7 +204,7 @@ def test_post_messages_unrecognized_product_asks_clarification():
 
             mock_extractor = mock_extractor_cls.return_value
             mock_extractor.extract.return_value = ExtractedTransaction(
-                type=TransactionType.SALE,
+                type=ExtractedTransactionType.SALE,
                 items=[
                     ExtractedItem(
                         product_id=None,  # Produk tidak terdaftar
@@ -215,7 +274,7 @@ def test_post_messages_sale_creates_pending_transaction():
 
             mock_extractor = mock_extractor_cls.return_value
             mock_extractor.extract.return_value = ExtractedTransaction(
-                type=TransactionType.SALE,
+                type=ExtractedTransactionType.SALE,
                 items=[
                     ExtractedItem(
                         product_id=1,
@@ -244,12 +303,130 @@ def test_post_messages_sale_creates_pending_transaction():
             data = res.json()
             assert data["intent"] == "sale"
             assert data["pending_transaction_id"] == 88
-            assert "Catatan Penjualan:" in data["reply_text"]
-            assert (
-                "Pelet Jitu: 2 bungkus x Rp 3,000.00 = Rp 6,000.00"
-                in data["reply_text"]
+            assert "Konfirmasi PENJUALAN:" in data["reply_text"]
+            assert "Pelet Jitu: 2 bungkus x Rp3.000 = Rp6.000" in data["reply_text"]
+            assert "Total: Rp6.000" in data["reply_text"]
+            assert 'Tekan tombol "Benar" untuk konfirmasi' in data["reply_text"]
+
+
+def test_post_messages_purchase_creates_pending_transaction_with_pembelian_title():
+    """Verify valid purchase chat creates pending transaction with PEMBELIAN title."""
+    with patch("app.services.message_service.get_session") as mock_session_ctx:
+        mock_session = mock_session_ctx.return_value.__enter__.return_value
+
+        with (
+            patch(
+                "app.services.message_service.get_message_router"
+            ) as mock_router_getter,
+            patch(
+                "app.services.message_service.TransactionExtractor"
+            ) as mock_extractor_cls,
+            patch(
+                "app.services.message_service.ProductRepository"
+            ) as mock_prod_repo_cls,
+            patch(
+                "app.services.message_service.TransactionRepository"
+            ) as mock_tx_repo_cls,
+        ):
+            mock_router_getter.return_value.route.return_value = MessageRoutingResult(
+                intent=MessageIntent.PURCHASE,
+                confidence=0.98,
             )
-            assert 'Ketik "Benar" untuk konfirmasi' in data["reply_text"]
+
+            mock_prod = DomainProduct(
+                id=1,
+                name="Pelet Jitu",
+                category="bahan_umpan",
+                unit="bungkus",
+                sell_price=Decimal("3000.00"),
+                avg_cost=Decimal("2500.00"),
+                stock_qty=10,
+                min_stock=2,
+            )
+            mock_prod_repo_cls.return_value.get_all.return_value = [mock_prod]
+
+            mock_extractor_cls.return_value.extract.return_value = ExtractedTransaction(
+                type=ExtractedTransactionType.PURCHASE,
+                items=[
+                    ExtractedItem(
+                        product_id=1,
+                        product_name_raw="pelet jitu",
+                        qty=5,
+                        unit_price=Decimal("2500.00"),
+                    )
+                ],
+            )
+
+            mock_tx_repo = mock_tx_repo_cls.return_value
+            mock_tx_repo.create_pending_transaction.return_value = type(
+                "MockTx", (), {"id": 89}
+            )()
+
+            res = client.post(
+                "/messages",
+                headers=AUTH_HEADERS,
+                json={
+                    "channel": "telegram",
+                    "chat_id": "user123",
+                    "text": "beli pelet jitu 5 bungkus harga 2500",
+                },
+            )
+
+            assert res.status_code == 200
+            data = res.json()
+            assert data["intent"] == "purchase"
+            assert data["pending_transaction_id"] == 89
+            assert "Konfirmasi PEMBELIAN:" in data["reply_text"]
+            assert "Pelet Jitu: 5 bungkus x Rp2.500 = Rp12.500" in data["reply_text"]
+            assert "Total: Rp12.500" in data["reply_text"]
+
+
+def test_post_messages_mixed_transaction_rejected_without_saving():
+    """Verify mixed sale+purchase message returns static template without saving transaction."""
+    with patch("app.services.message_service.get_session") as mock_session_ctx:
+        mock_session_ctx.return_value.__enter__.return_value = mock_session_ctx
+
+        with (
+            patch(
+                "app.services.message_service.get_message_router"
+            ) as mock_router_getter,
+            patch(
+                "app.services.message_service.TransactionExtractor"
+            ) as mock_extractor_cls,
+            patch(
+                "app.services.message_service.ProductRepository"
+            ) as mock_prod_repo_cls,
+            patch(
+                "app.services.message_service.TransactionRepository"
+            ) as mock_tx_repo_cls,
+        ):
+            mock_router_getter.return_value.route.return_value = MessageRoutingResult(
+                intent=MessageIntent.SALE,
+                confidence=0.90,
+            )
+            mock_prod_repo_cls.return_value.get_all.return_value = []
+            mock_extractor_cls.return_value.extract.return_value = ExtractedTransaction(
+                type=ExtractedTransactionType.MIXED,
+                items=[],
+            )
+            mock_tx_repo = mock_tx_repo_cls.return_value
+
+            res = client.post(
+                "/messages",
+                headers=AUTH_HEADERS,
+                json={
+                    "channel": "telegram",
+                    "chat_id": "user123",
+                    "text": "laku pelet jitu 2 dan beli senar litecate 5 harga 29000",
+                },
+            )
+
+            assert res.status_code == 200
+            data = res.json()
+            assert data["pending_transaction_id"] is None
+            assert "Satu chat hanya untuk satu jenis transaksi" in data["reply_text"]
+            assert "dua chat terpisah" in data["reply_text"]
+            mock_tx_repo.create_pending_transaction.assert_not_called()
 
 
 def test_transactions_confirm_and_reject_api():
