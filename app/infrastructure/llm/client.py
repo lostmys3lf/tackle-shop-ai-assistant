@@ -94,8 +94,10 @@ class LLMClient:
 
     def _create_openai_client(self) -> Any:
         """Create standard OpenAI client or Langfuse-instrumented OpenAI client."""
-        # Gunakan placeholder jika api_key kosong agar inisialisasi di CI tidak crash
-        api_key = self.config.api_key or "dummy-api-key"
+        # Gagal sejak awal kalau API key kosong, supaya salah konfigurasi langsung ketahuan
+        if not self.config.api_key:
+            raise LLMError("LLM_API_KEY is empty; set it before calling the LLM.")
+        api_key = self.config.api_key
 
         # Sinkronkan environment variable Langfuse jika diisi
         if self.is_langfuse_enabled:
