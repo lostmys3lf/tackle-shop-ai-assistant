@@ -57,7 +57,7 @@ Selesai kalau eval jalan sampai selesai tanpa kena limit Groq, menampilkan akura
 Channel: Telegram. Workflow 1 dan 2 di spec bagian 12. Butuh bot Telegram dari BotFather (dikerjakan Jef) dan webhook lewat Cloudflare Tunnel.
 Selesai kalau pemilik bisa mencatat penjualan dari HP, menekan Benar, dan menerima balasan sisa stok.
 
-## Task 10: Agent `[ ]`
+## Task 10: Agent `[x]`
 Intent `question` dijawab agent dengan tools di spec bagian 11.
 Selesai kalau pertanyaan stok, penjualan per periode, dan barang terlaris dijawab dengan angka yang sama dengan hasil query langsung.
 

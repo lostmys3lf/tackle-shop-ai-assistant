@@ -1,0 +1,8 @@
+{"id": "ag_01", "text": "sisa stok pelet jitu tinggal berapa?", "expected_tool": "get_stock", "expected_values": ["20"]}
+{"id": "ag_02", "text": "stok semua barang sekarang ada berapa aja?", "expected_tool": "get_stock", "expected_values": ["Pelet Jitu", "Senar Litecate"]}
+{"id": "ag_03", "text": "penjualan hari ini berapa totalnya?", "expected_tool": "sales_summary", "expected_values": ["41.000"]}
+{"id": "ag_04", "text": "penjualan minggu ini laku berapa dan ada berapa transaksi?", "expected_tool": "sales_summary", "expected_values": ["145.000", "6"]}
+{"id": "ag_05", "text": "barang apa yang paling laris bulan ini?", "expected_tool": "top_products", "expected_values": ["Pelet Jitu", "12"]}
+{"id": "ag_06", "text": "sebutkan 3 barang terlaris bulan ini", "expected_tool": "top_products", "expected_values": ["Pelet Jitu", "Umpan Pak Ikin", "Senar Litecate"]}
+{"id": "ag_07", "text": "laba rugi bulan ini bagaimana?", "expected_tool": "profit_loss", "expected_values": ["145.000", "24.200"]}
+{"id": "ag_08", "text": "berapa omzet, HPP, dan laba kotor bulan November 2026?", "expected_tool": "profit_loss", "expected_values": ["145.000", "120.800", "24.200"]}

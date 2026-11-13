@@ -2,17 +2,23 @@
 
 # pylint: disable=too-few-public-methods
 
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import select
+from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.domain.models import (
+    AccountCode,
     AccountingExecutionResult,
     DomainProduct,
+    ProfitLossData,
+    SalesSummaryData,
+    TopProductData,
     TransactionStatus,
+    TransactionType,
 )
 from app.infrastructure.db.models import (
     JournalEntry,
@@ -217,3 +223,227 @@ class MessageRepository:
             if confidence is not None:
                 msg.intent_confidence = confidence
             self.session.flush()
+
+
+def _get_jakarta_tz() -> tzinfo:
+    """Return Asia/Jakarta timezone with fixed UTC+7 fallback."""
+    try:
+        return ZoneInfo("Asia/Jakarta")
+    except ZoneInfoNotFoundError:  # pragma: no cover
+        return timezone(timedelta(hours=7))
+
+
+JAKARTA_TZ: tzinfo = _get_jakarta_tz()
+
+
+def get_jakarta_today() -> date:
+    """Return current calendar date in Asia/Jakarta (WIB)."""
+    return datetime.now(JAKARTA_TZ).date()
+
+
+def _jakarta_date_range_to_utc(
+    start_date: date, end_date: date
+) -> tuple[datetime, datetime]:
+    """Convert inclusive Asia/Jakarta dates to [start_utc, end_exclusive_utc) bounds."""
+    if end_date < start_date:
+        raise ValueError("Tanggal akhir tidak boleh lebih awal dari tanggal mulai.")
+    start_local = datetime.combine(start_date, time.min, tzinfo=JAKARTA_TZ)
+    end_local = datetime.combine(
+        end_date + timedelta(days=1), time.min, tzinfo=JAKARTA_TZ
+    )
+    return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+
+def _parse_month_bounds(month: str) -> tuple[str, date, date]:
+    """Parse YYYY-MM string into normalized month label and inclusive start/end dates."""
+    clean = month.strip()
+    parts = clean.split("-")
+    if len(parts) != 2 or not parts[0].isdigit() or not parts[1].isdigit():
+        raise ValueError("Format bulan harus YYYY-MM (contoh: 2026-11).")
+
+    year = int(parts[0])
+    month_num = int(parts[1])
+    if month_num < 1 or month_num > 12:
+        raise ValueError("Bulan harus bernilai antara 01 sampai 12.")
+
+    month_start = date(year, month_num, 1)
+    if month_num == 12:
+        next_month = date(year + 1, 1, 1)
+    else:
+        next_month = date(year, month_num + 1, 1)
+    month_end = next_month - timedelta(days=1)
+    return f"{year:04d}-{month_num:02d}", month_start, month_end
+
+
+def _to_money_decimal(value: Any) -> Decimal:
+    """Convert SQL aggregate numeric value into 2-decimal Decimal safely."""
+    if value is None:
+        return Decimal("0.00")
+    return Decimal(str(value)).quantize(Decimal("0.01"))
+
+
+class ReportRepository:
+    """Read-only repository for inventory, sales summaries, top products, and P&L."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize report repository with database session."""
+        self.session = session
+
+    def get_stock(self, product_query: str | None = None) -> list[DomainProduct]:
+        """Return active products matching query string, or all products if empty."""
+        clean_query = (product_query or "").strip()
+        if not clean_query:
+            stmt = select(Product).order_by(Product.id)
+            return [_to_domain_product(row) for row in self.session.scalars(stmt).all()]
+
+        pattern = f"%{clean_query}%"
+        stmt = (
+            select(Product)
+            .where(or_(Product.name.ilike(pattern), Product.category.ilike(pattern)))
+            .order_by(Product.id)
+        )
+        rows = self.session.scalars(stmt).all()
+
+        # Fallback pecah per kata jika frasa multi-kata tidak cocok persis berurutan
+        tokens = [tok for tok in clean_query.split() if tok]
+        if not rows and len(tokens) > 1:
+            token_stmt = (
+                select(Product)
+                .where(and_(*(Product.name.ilike(f"%{tok}%") for tok in tokens)))
+                .order_by(Product.id)
+            )
+            rows = self.session.scalars(token_stmt).all()
+
+        return [_to_domain_product(row) for row in rows]
+
+    def get_low_stock(self) -> list[DomainProduct]:
+        """Return products with stock_qty at or below min_stock."""
+        stmt = (
+            select(Product)
+            .where(Product.stock_qty <= Product.min_stock)
+            .order_by(Product.stock_qty, Product.id)
+        )
+        rows = self.session.scalars(stmt).all()
+        return [_to_domain_product(row) for row in rows]
+
+    def get_sales_summary(self, start_date: date, end_date: date) -> SalesSummaryData:
+        """Calculate confirmed sales total, transaction count, and items sold for date range."""
+        start_utc, end_exclusive_utc = _jakarta_date_range_to_utc(start_date, end_date)
+        stmt = (
+            select(
+                func.coalesce(
+                    func.sum(TransactionItem.qty * TransactionItem.unit_price), 0
+                ).label("total_sales"),
+                func.count(func.distinct(Transaction.id)).label("tx_count"),
+                func.coalesce(func.sum(TransactionItem.qty), 0).label("total_items"),
+            )
+            .select_from(Transaction)
+            .outerjoin(
+                TransactionItem, TransactionItem.transaction_id == Transaction.id
+            )
+            .where(
+                Transaction.type == TransactionType.SALE.value,
+                Transaction.status == TransactionStatus.CONFIRMED.value,
+                Transaction.confirmed_at.is_not(None),
+                Transaction.confirmed_at >= start_utc,
+                Transaction.confirmed_at < end_exclusive_utc,
+            )
+        )
+        row = self.session.execute(stmt).one()
+        return SalesSummaryData(
+            start_date=start_date,
+            end_date=end_date,
+            total_sales=_to_money_decimal(row.total_sales),
+            transaction_count=int(row.tx_count or 0),
+            total_items_sold=int(row.total_items or 0),
+        )
+
+    def get_top_products(
+        self,
+        start_date: date,
+        end_date: date,
+        limit: int = 5,
+    ) -> list[TopProductData]:
+        """Return best-selling products ordered by sold quantity within date range."""
+        start_utc, end_exclusive_utc = _jakarta_date_range_to_utc(start_date, end_date)
+        safe_limit = max(1, min(limit, 50))
+        qty_sum = func.coalesce(func.sum(TransactionItem.qty), 0).label("total_qty")
+        rev_sum = func.coalesce(
+            func.sum(TransactionItem.qty * TransactionItem.unit_price), 0
+        ).label("total_revenue")
+
+        stmt = (
+            select(
+                Product.id.label("product_id"),
+                Product.name.label("product_name"),
+                Product.category.label("category"),
+                Product.unit.label("unit"),
+                qty_sum,
+                rev_sum,
+            )
+            .select_from(TransactionItem)
+            .join(Transaction, TransactionItem.transaction_id == Transaction.id)
+            .join(Product, TransactionItem.product_id == Product.id)
+            .where(
+                Transaction.type == TransactionType.SALE.value,
+                Transaction.status == TransactionStatus.CONFIRMED.value,
+                Transaction.confirmed_at.is_not(None),
+                Transaction.confirmed_at >= start_utc,
+                Transaction.confirmed_at < end_exclusive_utc,
+            )
+            .group_by(Product.id, Product.name, Product.category, Product.unit)
+            .order_by(desc(qty_sum), desc(rev_sum), Product.id)
+            .limit(safe_limit)
+        )
+        rows = self.session.execute(stmt).all()
+        return [
+            TopProductData(
+                product_id=row.product_id,
+                product_name=row.product_name,
+                category=row.category,
+                unit=row.unit,
+                total_qty=int(row.total_qty or 0),
+                total_revenue=_to_money_decimal(row.total_revenue),
+            )
+            for row in rows
+        ]
+
+    def get_profit_loss(self, month: str) -> ProfitLossData:
+        """Compute monthly sales revenue, COGS, and gross profit from journal lines."""
+        normalized_month, month_start, month_end = _parse_month_bounds(month)
+        stmt = (
+            select(
+                JournalLine.account_code.label("account_code"),
+                func.coalesce(func.sum(JournalLine.debit), 0).label("total_debit"),
+                func.coalesce(func.sum(JournalLine.credit), 0).label("total_credit"),
+            )
+            .select_from(JournalLine)
+            .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
+            .where(
+                JournalEntry.entry_date >= month_start,
+                JournalEntry.entry_date <= month_end,
+                JournalLine.account_code.in_(
+                    [AccountCode.SALES_REVENUE.value, AccountCode.COGS.value]
+                ),
+            )
+            .group_by(JournalLine.account_code)
+        )
+        rows = self.session.execute(stmt).all()
+
+        total_sales = Decimal("0.00")
+        total_cogs = Decimal("0.00")
+        for row in rows:
+            debit = _to_money_decimal(row.total_debit)
+            credit = _to_money_decimal(row.total_credit)
+            if row.account_code == AccountCode.SALES_REVENUE.value:
+                total_sales = (credit - debit).quantize(Decimal("0.01"))
+            elif row.account_code == AccountCode.COGS.value:
+                total_cogs = (debit - credit).quantize(Decimal("0.01"))
+
+        gross_profit = (total_sales - total_cogs).quantize(Decimal("0.01"))
+        return ProfitLossData(
+            month=normalized_month,
+            total_sales=total_sales,
+            total_cogs=total_cogs,
+            gross_profit=gross_profit,
+        )

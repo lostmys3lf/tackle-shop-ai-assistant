@@ -133,19 +133,25 @@ def test_format_currency_indonesian_no_decimals():
 
 
 def test_post_messages_intent_question():
-    """Verify question chat returns informative response without drafting transaction."""
+    """Verify question chat routes to AgentService without drafting transaction."""
     with patch("app.services.message_service.get_session") as mock_session_ctx:
         mock_session = mock_session_ctx.return_value.__enter__.return_value
-        mock_msg = type("MockMsg", (), {"id": 102})()
         mock_session.add.return_value = None
 
-        with patch(
-            "app.services.message_service.get_message_router"
-        ) as mock_router_getter:
+        with (
+            patch(
+                "app.services.message_service.get_message_router"
+            ) as mock_router_getter,
+            patch("app.services.message_service.AgentService") as mock_agent_cls,
+        ):
             mock_router = mock_router_getter.return_value
             mock_router.route.return_value = MessageRoutingResult(
                 intent=MessageIntent.QUESTION,
                 confidence=0.95,
+            )
+            mock_agent = mock_agent_cls.return_value
+            mock_agent.answer_question.return_value = (
+                "Sisa stok Pelet Jitu saat ini 18 bungkus."
             )
 
             res = client.post(
@@ -161,8 +167,11 @@ def test_post_messages_intent_question():
             assert res.status_code == 200
             data = res.json()
             assert data["intent"] == "question"
-            assert "Task 10" in data["reply_text"]
+            assert data["reply_text"] == "Sisa stok Pelet Jitu saat ini 18 bungkus."
             assert data["pending_transaction_id"] is None
+            mock_agent.answer_question.assert_called_once_with(
+                "stok pelet sisa berapa?", session=mock_session
+            )
 
 
 def test_post_messages_unrecognized_product_asks_clarification():

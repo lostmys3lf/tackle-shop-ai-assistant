@@ -6,6 +6,7 @@ import os
 import sys
 import time
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -17,16 +18,21 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from app.domain.models import (
+from app.domain.models import (  # pylint: disable=wrong-import-position
     DomainProduct,
-    TransactionType,
-)  # pylint: disable=wrong-import-position
-from app.infrastructure.llm.extractor import (
+    ProfitLossData,
+    SalesSummaryData,
+    TopProductData,
+)
+from app.infrastructure.llm.extractor import (  # pylint: disable=wrong-import-position
     TransactionExtractor,
-)  # pylint: disable=wrong-import-position
-from app.infrastructure.llm.router import (
+)
+from app.infrastructure.llm.router import (  # pylint: disable=wrong-import-position
     LLMMessageRouter,
-)  # pylint: disable=wrong-import-position
+)
+from app.services.agent_service import (  # pylint: disable=wrong-import-position
+    AgentService,
+)
 
 EVAL_THRESHOLD = 0.85
 DELAY_BETWEEN_CALLS = 1.5  # Jeda detik agar mematuhi batas 30 req/menit Groq
@@ -278,7 +284,164 @@ def record_to_langfuse(report: dict[str, Any]) -> None:
         print(f"[WARN] Gagal mencatat ke Langfuse: {exc}")
 
 
-def print_score_table(scores: dict[str, FieldScore], router_score: FieldScore) -> float:
+class EvalReportRepository:
+    """Deterministic in-memory report repository for running agent evals without PostgreSQL."""
+
+    def __init__(self, products: list[DomainProduct]) -> None:
+        """Store seed products as baseline catalog."""
+        self.products = products
+
+    def get_stock(self, product_query: str | None = None) -> list[DomainProduct]:
+        """Filter seed products case-insensitively."""
+        clean = (product_query or "").strip().lower()
+        if not clean:
+            return list(self.products)
+        matches = [
+            p
+            for p in self.products
+            if clean in p.name.lower() or clean in p.category.lower()
+        ]
+        if not matches and len(clean.split()) > 1:
+            tokens = clean.split()
+            matches = [
+                p for p in self.products if all(tok in p.name.lower() for tok in tokens)
+            ]
+        return matches
+
+    def get_sales_summary(self, start_date: date, end_date: date) -> SalesSummaryData:
+        """Return deterministic sales summary for single-day or multi-day ranges."""
+        if start_date == end_date == date(2026, 11, 13):
+            return SalesSummaryData(
+                start_date=start_date,
+                end_date=end_date,
+                total_sales=Decimal("41000.00"),
+                transaction_count=2,
+                total_items_sold=3,
+            )
+        return SalesSummaryData(
+            start_date=start_date,
+            end_date=end_date,
+            total_sales=Decimal("145000.00"),
+            transaction_count=6,
+            total_items_sold=23,
+        )
+
+    def get_top_products(
+        self, _start_date: date, _end_date: date, limit: int = 5
+    ) -> list[TopProductData]:
+        """Return deterministic best-selling products."""
+        items = [
+            TopProductData(
+                product_id=5,
+                product_name="Pelet Jitu",
+                category="bahan_umpan",
+                unit="bungkus",
+                total_qty=12,
+                total_revenue=Decimal("36000.00"),
+            ),
+            TopProductData(
+                product_id=3,
+                product_name="Umpan Pak Ikin",
+                category="bahan_umpan",
+                unit="bungkus",
+                total_qty=8,
+                total_revenue=Decimal("40000.00"),
+            ),
+            TopProductData(
+                product_id=1,
+                product_name="Senar Litecate N Nylon 150 m",
+                category="peralatan",
+                unit="gulung",
+                total_qty=2,
+                total_revenue=Decimal("70000.00"),
+            ),
+        ]
+        return items[: max(1, limit)]
+
+    def get_profit_loss(self, month: str) -> ProfitLossData:
+        """Return deterministic monthly P&L statement."""
+        return ProfitLossData(
+            month=month,
+            total_sales=Decimal("145000.00"),
+            total_cogs=Decimal("120800.00"),
+            gross_profit=Decimal("24200.00"),
+        )
+
+
+def evaluate_agent(
+    products: list[DomainProduct],
+    limit: int | None = None,
+) -> tuple[dict[str, FieldScore], list[dict[str, Any]]]:
+    """Evaluate agent question answering against agent_questions.jsonl dataset."""
+    dataset_path = BASE_DIR / "evals" / "datasets" / "agent_questions.jsonl"
+    scores = {
+        "agent_tool": FieldScore(),
+        "agent_values": FieldScore(),
+    }
+    details: list[dict[str, Any]] = []
+    repo = EvalReportRepository(products)
+    agent = AgentService(report_repo=repo)
+    eval_today = date(2026, 11, 13)
+
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    if limit:
+        lines = lines[:limit]
+
+    print(f"\n--- Mengevaluasi Agent Pertanyaan ({len(lines)} contoh) ---")
+    for line in lines:
+        sample = json.loads(line)
+        text = sample["text"]
+        expected_tool = sample["expected_tool"]
+        expected_values = sample["expected_values"]
+
+        try:
+            run_res = agent.run_agent(text, today=eval_today)
+            tools_called = run_res.tool_calls_made
+            answer = run_res.answer
+            tool_match = expected_tool in tools_called
+            values_match = all(val.lower() in answer.lower() for val in expected_values)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            tools_called = []
+            answer = f"ERROR: {exc}"
+            tool_match = False
+            values_match = False
+
+        scores["agent_tool"].total += 1
+        if tool_match:
+            scores["agent_tool"].correct += 1
+
+        scores["agent_values"].total += 1
+        if values_match:
+            scores["agent_values"].correct += 1
+
+        passed = tool_match and values_match
+        details.append(
+            {
+                "id": sample["id"],
+                "text": text,
+                "passed": passed,
+                "expected_tool": expected_tool,
+                "actual_tools": tools_called,
+                "expected_values": expected_values,
+                "answer": answer,
+            }
+        )
+        print(
+            f"[{'OK' if passed else 'FAIL'}] {sample['id']}: "
+            f"tools={tools_called} | '{text}'"
+        )
+        time.sleep(DELAY_BETWEEN_CALLS)
+
+    return scores, details
+
+
+def print_score_table(
+    scores: dict[str, FieldScore],
+    router_score: FieldScore,
+    agent_scores: dict[str, FieldScore] | None = None,
+) -> float:
     """Print markdown/table format of evaluation scores and return average accuracy."""
     print("\n" + "=" * 60)
     print(f"{'Field / Kategori':<25} | {'Benar':<8} | {'Total':<8} | {'Akurasi':<8}")
@@ -297,6 +460,14 @@ def print_score_table(scores: dict[str, FieldScore], router_score: FieldScore) -
         )
         total_correct += score.correct
         total_items += score.total
+
+    if agent_scores:
+        for name, score in agent_scores.items():
+            print(
+                f"{name:<25} | {score.correct:<8} | {score.total:<8} | {score.accuracy * 100:.1f}%"
+            )
+            total_correct += score.correct
+            total_items += score.total
 
     overall_acc = total_correct / total_items if total_items > 0 else 0.0
     print("-" * 60)
@@ -322,8 +493,9 @@ def main() -> None:
 
     router_score, router_details = evaluate_router(router, limit=limit)
     tx_scores, tx_details = evaluate_transactions(extractor, products, limit=limit)
+    agent_scores, agent_details = evaluate_agent(products, limit=limit)
 
-    overall_accuracy = print_score_table(tx_scores, router_score)
+    overall_accuracy = print_score_table(tx_scores, router_score, agent_scores)
     duration = time.time() - start_time
     print(f"Evaluasi selesai dalam {duration:.1f} detik.")
 
@@ -333,8 +505,10 @@ def main() -> None:
         "threshold": EVAL_THRESHOLD,
         "router_accuracy": router_score.accuracy,
         "transaction_field_accuracies": {k: v.accuracy for k, v in tx_scores.items()},
+        "agent_field_accuracies": {k: v.accuracy for k, v in agent_scores.items()},
         "router_details": router_details,
         "transactions_details": tx_details,
+        "agent_details": agent_details,
     }
 
     report_path = BASE_DIR / "evals" / "eval_report.json"

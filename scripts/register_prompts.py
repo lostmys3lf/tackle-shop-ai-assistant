@@ -39,6 +39,12 @@ def main() -> None:
             "labels": ["production", "v1"],
             "commit_message": "Extraction prompt v1",
         },
+        {
+            "name": "store_agent",
+            "file": prompts_dir / "agent_v1.txt",
+            "labels": ["production", "v1"],
+            "commit_message": "Store agent prompt v1",
+        },
     ]
 
     for item in prompts_to_register:

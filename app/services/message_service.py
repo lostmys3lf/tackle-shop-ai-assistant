@@ -2,7 +2,7 @@
 
 # pylint: disable=too-few-public-methods
 
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import Any
 
 from app.domain.models import DomainProduct, TransactionSource, TransactionType
@@ -23,6 +23,8 @@ from app.infrastructure.llm.router import (
     MessageIntent,
     get_message_router,
 )
+from app.services.agent_service import AgentService
+from app.services.formatting import format_rupiah
 
 WELCOME_MESSAGE = (
     "Halo, Pak Jon! Selamat datang di Asisten Toko Pancing Bapak.\n"
@@ -58,10 +60,7 @@ def _is_welcome_command(text: str) -> bool:
 
 def _format_currency(amount: Decimal) -> str:
     """Format decimal amount into Indonesian Rupiah without decimals (e.g. Rp3.000)."""
-    rounded = int(amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-    sign = "-" if rounded < 0 else ""
-    formatted = f"{abs(rounded):,}".replace(",", ".")
-    return f"{sign}Rp{formatted}"
+    return format_rupiah(amount)
 
 
 def _build_confirmation_text(
@@ -108,10 +107,12 @@ class MessageService:
         self,
         router: BaseMessageRouter | None = None,
         extractor: TransactionExtractor | None = None,
+        agent_service: AgentService | None = None,
     ) -> None:
-        """Initialize message service with router and extractor."""
+        """Initialize message service with router, extractor, and agent."""
         self.router = router or get_message_router()
         self.extractor = extractor or TransactionExtractor()
+        self.agent_service = agent_service or AgentService()
 
     def process_message(
         self,
@@ -161,10 +162,7 @@ class MessageService:
 
             # 3. Handle pertanyaan, percakapan umum, atau transaksi
             if intent == MessageIntent.QUESTION:
-                reply = (
-                    "Pertanyaan Anda tercatat. Fitur tanya jawab data toko otomatis "
-                    "akan aktif pada modul Agent (Task 10)."
-                )
+                reply = self.agent_service.answer_question(clean_text, session=session)
             elif intent == MessageIntent.OTHER:
                 reply = (
                     "Halo! Saya bot pencatatan Toko Pancing Bapak. "

@@ -197,3 +197,41 @@ def test_langfuse_tracing_metadata_included():
     assert call_kwargs["name"] == "test_prompt"
     assert call_kwargs["metadata"]["prompt_version"] == "v1.2"
     assert call_kwargs["metadata"]["user_type"] == "owner"
+
+
+def test_generate_with_tools_parses_tool_calls_and_falls_back(mock_config):
+    """Test generate_with_tools extracts tool calls and falls back on primary error."""
+    mock_raw_client = MagicMock()
+    tool_call = MagicMock()
+    tool_call.id = "call_123"
+    tool_call.function.name = "get_stock"
+    tool_call.function.arguments = '{"product_query": "pelet"}'
+
+    choice = MagicMock()
+    choice.message.content = ""
+    choice.message.tool_calls = [tool_call]
+    completion = MagicMock()
+    completion.choices = [choice]
+
+    api_err = openai.APIConnectionError(request=MagicMock())
+
+    def side_effect(**kwargs):
+        if kwargs.get("model") == "mock/primary-model":
+            raise api_err
+        return completion
+
+    mock_raw_client.chat.completions.create.side_effect = side_effect
+
+    client = LLMClient(config=mock_config, raw_client=mock_raw_client)
+    req = LLMRequest(
+        messages=[{"role": "user", "content": "cek stok pelet"}],
+        tools=[{"type": "function", "function": {"name": "get_stock"}}],
+        tool_choice="auto",
+    )
+
+    result = client.generate_with_tools(req)
+
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].id == "call_123"
+    assert result.tool_calls[0].name == "get_stock"
+    assert result.tool_calls[0].arguments == '{"product_query": "pelet"}'

@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
@@ -26,18 +27,38 @@ from app.infrastructure.llm.exceptions import (
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+U = TypeVar("U")
 
 
 @dataclass
-class LLMRequest:
-    """Request payload parameters for LLM text and structured generation."""
+class LLMToolCall:
+    """Single tool/function call emitted by the LLM."""
 
-    messages: list[dict[str, str]]
+    id: str
+    name: str
+    arguments: str
+
+
+@dataclass
+class LLMToolResponse:
+    """Completion output that may include assistant text and tool calls."""
+
+    content: str
+    tool_calls: list[LLMToolCall] = field(default_factory=list)
+
+
+@dataclass
+class LLMRequest:  # pylint: disable=too-many-instance-attributes
+    """Request payload parameters for LLM text, structured, and tool generation."""
+
+    messages: list[dict[str, Any]]
     prompt_version: str | None = None
     max_tokens: int = 1000
     temperature: float = 0.0
     name: str = "llm_completion"
     metadata: dict[str, Any] = field(default_factory=dict)
+    tools: list[dict[str, Any]] | None = None
+    tool_choice: str | dict[str, Any] | None = None
 
 
 @dataclass
@@ -123,13 +144,13 @@ class LLMClient:
             timeout=self.config.timeout,
         )
 
-    def _call_model_with_retry(
+    def _call_completion_raw(
         self,
         model: str,
         request: LLMRequest,
         response_format: dict[str, str] | None = None,
-    ) -> str:
-        """Call LLM provider for a specific model with exponential backoff on HTTP 429."""
+    ) -> Any:
+        """Execute chat completion for a model with retry on HTTP 429 and return message."""
         retries = 0
         current_delay = self.config.retry_delay_seconds
 
@@ -143,6 +164,11 @@ class LLMClient:
         if response_format is not None:
             kwargs["response_format"] = response_format
 
+        if request.tools:
+            kwargs["tools"] = request.tools
+            if request.tool_choice is not None:
+                kwargs["tool_choice"] = request.tool_choice
+
         # Tambahkan metadata Langfuse jika tracing aktif
         if self.is_langfuse_enabled:
             kwargs["name"] = request.name
@@ -154,8 +180,7 @@ class LLMClient:
         while True:
             try:
                 response = self._client.chat.completions.create(**kwargs)
-                content = response.choices[0].message.content or ""
-                return content
+                return response.choices[0].message
             except openai.RateLimitError as exc:
                 retries += 1
                 if retries > self.config.max_rate_limit_retries:
@@ -181,11 +206,23 @@ class LLMClient:
                 logger.error("Panggilan LLM gagal untuk model %s: %s", model, exc)
                 raise LLMError(f"LLM call failed for model '{model}': {exc}") from exc
 
-    def generate_text(self, request: LLMRequest) -> str:
-        """Generate text completion with automatic fallback to secondary model."""
+    def _call_model_with_retry(
+        self,
+        model: str,
+        request: LLMRequest,
+        response_format: dict[str, str] | None = None,
+    ) -> str:
+        """Call LLM provider for a specific model and return text content."""
+        message = self._call_completion_raw(
+            model, request, response_format=response_format
+        )
+        return message.content or ""
+
+    def _run_with_fallback(self, runner: Callable[[str], U]) -> U:
+        """Execute model call on primary model with automatic fallback to secondary model."""
         primary_error: Exception | None = None
         try:
-            return self._call_model_with_retry(self.primary_model, request)
+            return runner(self.primary_model)
         except (LLMRateLimitError, LLMError) as exc:
             primary_error = exc
             logger.warning(
@@ -196,7 +233,7 @@ class LLMClient:
             )
 
         try:
-            return self._call_model_with_retry(self.fallback_model, request)
+            return runner(self.fallback_model)
         except (LLMRateLimitError, LLMError) as fallback_exc:
             logger.error(
                 "Model fallback '%s' juga gagal: %s",
@@ -207,6 +244,43 @@ class LLMClient:
                 f"Semua model LLM gagal. Model utama '{self.primary_model}': {primary_error}. "
                 f"Model fallback '{self.fallback_model}': {fallback_exc}."
             ) from fallback_exc
+
+    def generate_text(self, request: LLMRequest) -> str:
+        """Generate text completion with automatic fallback to secondary model."""
+        return self._run_with_fallback(
+            lambda model: self._call_model_with_retry(model, request)
+        )
+
+    def _parse_tool_message(self, model: str, message: Any) -> LLMToolResponse:
+        """Extract text content and normalized tool calls from completion message."""
+        content = getattr(message, "content", None) or ""
+        raw_calls = getattr(message, "tool_calls", None)
+        tool_calls: list[LLMToolCall] = []
+
+        if isinstance(raw_calls, list):
+            try:
+                for call in raw_calls:
+                    tool_calls.append(
+                        LLMToolCall(
+                            id=str(call.id),
+                            name=str(call.function.name),
+                            arguments=str(call.function.arguments or "{}"),
+                        )
+                    )
+            except AttributeError as exc:
+                raise LLMError(
+                    f"Malformed tool call structure from model '{model}': {exc}"
+                ) from exc
+
+        return LLMToolResponse(content=content, tool_calls=tool_calls)
+
+    def generate_with_tools(self, request: LLMRequest) -> LLMToolResponse:
+        """Generate completion supporting OpenAI tool calls with fallback and tracing."""
+        return self._run_with_fallback(
+            lambda model: self._parse_tool_message(
+                model, self._call_completion_raw(model, request)
+            )
+        )
 
     def _execute_and_validate(
         self,

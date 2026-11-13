@@ -122,3 +122,36 @@ class AccountingExecutionResult:
     updated_products: list[DomainProduct]
     stock_movements: list[DomainStockMovement]
     journal_entry: DomainJournalEntry
+
+
+@dataclass
+class SalesSummaryData:
+    """Aggregated sales summary for a date range."""
+
+    start_date: date
+    end_date: date
+    total_sales: Decimal
+    transaction_count: int
+    total_items_sold: int
+
+
+@dataclass
+class TopProductData:
+    """Best-selling product statistics for a date range."""
+
+    product_id: int
+    product_name: str
+    category: str
+    unit: str
+    total_qty: int
+    total_revenue: Decimal
+
+
+@dataclass
+class ProfitLossData:
+    """Monthly gross profit and loss statement calculated from journal entries."""
+
+    month: str
+    total_sales: Decimal
+    total_cogs: Decimal
+    gross_profit: Decimal
