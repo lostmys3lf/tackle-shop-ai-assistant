@@ -1,0 +1,205 @@
+[
+  {
+    "updatedAt": "2026-11-13T11:38:16.274Z",
+    "createdAt": "2026-11-13T11:37:10.723Z",
+    "id": "CDRbqt6a9kDPA58J",
+    "name": "3 - Alert Stok Menipis Harian",
+    "description": "Alert harian stok menipis ke Telegram pemilik toko pada pukul 08.00 WIB.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "a1035793-b3d9-42db-8cb6-0c0c41043d0e",
+        "name": "Jadwal Harian 08.00 WIB",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          0,
+          96
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "days",
+                "daysInterval": 1,
+                "triggerAtHour": 8,
+                "triggerAtMinute": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "e41c61d9-29fd-42f5-91f3-af2765e21ad4",
+        "name": "Ambil Laporan Stok Menipis",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          224,
+          96
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/low-stock",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "7507b832-10af-42fa-9f95-25c021bd77ae",
+        "name": "Ada Stok Menipis?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          448,
+          96
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-low-stock",
+                "leftValue": "={{ $json.has_low_stock }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "1351c789-739d-4ac9-9047-7815bf1523d3",
+        "name": "Kirim Alert Stok ke Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          672,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "1191657048",
+          "text": "={{ $json.summary_text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "e3242a99-5940-45c0-9e3d-5452a1d8ae12",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "18c1051b-e053-4dd7-a99c-468e7d41f76f",
+        "name": "Stok Aman",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          672,
+          192
+        ],
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "Jadwal Harian 08.00 WIB": {
+        "main": [
+          [
+            {
+              "node": "Ambil Laporan Stok Menipis",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Stok Menipis": {
+        "main": [
+          [
+            {
+              "node": "Ada Stok Menipis?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ada Stok Menipis?": {
+        "main": [
+          [
+            {
+              "node": "Kirim Alert Stok ke Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Stok Aman",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true,
+      "timezone": "Asia/Jakarta"
+    },
+    "staticData": {
+      "node:Jadwal Harian 08.00 WIB": {
+        "recurrenceRules": [
+          null
+        ],
+        "recurrenceRuleSignatures": [
+          null
+        ]
+      }
+    },
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [],
+    "pinData": null,
+    "versionId": "b30c6428-d3e6-440a-9d6f-e186c8b1a3fe",
+    "activeVersionId": "b30c6428-d3e6-440a-9d6f-e186c8b1a3fe",
+    "versionCounter": 2,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Fix If false branch connection to Stok Aman",
+      "description": "Move 'Stok Aman' noOp node from If output 0 (true) to output 1 (false)."
+    }
+  }
+]

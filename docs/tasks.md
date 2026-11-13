@@ -61,7 +61,7 @@ Selesai kalau pemilik bisa mencatat penjualan dari HP, menekan Benar, dan meneri
 Intent `question` dijawab agent dengan tools di spec bagian 11.
 Selesai kalau pertanyaan stok, penjualan per periode, dan barang terlaris dijawab dengan angka yang sama dengan hasil query langsung.
 
-## Task 11: Laporan dan jadwal `[ ]`
+## Task 11: Laporan dan jadwal `[x]`
 Endpoint laporan di spec bagian 9 dan workflow n8n 3 sampai 5. Jam pengiriman masih `TBD`, jadi pakai jam sementara yang mudah diubah.
 Selesai kalau ketiga laporan bisa dipicu manual dari n8n dan isinya cocok dengan data.
 

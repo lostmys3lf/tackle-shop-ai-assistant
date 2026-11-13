@@ -1,0 +1,147 @@
+[
+  {
+    "updatedAt": "2026-11-13T11:37:42.467Z",
+    "createdAt": "2026-11-13T11:37:13.663Z",
+    "id": "u4TiJNT4bELFzgO9",
+    "name": "4 - Laporan Penjualan Mingguan",
+    "description": "Laporan penjualan mingguan ke Telegram pemilik toko setiap Senin pukul 08.00 WIB.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "a7c5dffb-32cc-4828-9dfe-a621b989a3d4",
+        "name": "Jadwal Mingguan Senin 08.00 WIB",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "weeks",
+                "weeksInterval": 1,
+                "triggerAtDay": [
+                  1
+                ],
+                "triggerAtHour": 8,
+                "triggerAtMinute": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "4944d0fa-b850-4865-be92-e51686182c8b",
+        "name": "Ambil Laporan Penjualan Mingguan",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          224,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/sales",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "8f596b67-acc4-4a27-b040-11007d89d1dd",
+        "name": "Kirim Laporan Penjualan ke Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          448,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "1191657048",
+          "text": "={{ $json.summary_text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "10735db1-f68c-465d-8d60-e1fe717267ab",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      }
+    ],
+    "connections": {
+      "Jadwal Mingguan Senin 08.00 WIB": {
+        "main": [
+          [
+            {
+              "node": "Ambil Laporan Penjualan Mingguan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Penjualan Mingguan": {
+        "main": [
+          [
+            {
+              "node": "Kirim Laporan Penjualan ke Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true,
+      "timezone": "Asia/Jakarta"
+    },
+    "staticData": {
+      "node:Jadwal Mingguan Senin 08.00 WIB": {
+        "recurrenceRules": [
+          null
+        ],
+        "recurrenceRuleSignatures": [
+          null
+        ]
+      }
+    },
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [],
+    "pinData": null,
+    "versionId": "4c24c71e-bdd7-4913-9332-36ad136c9b8d",
+    "activeVersionId": "4c24c71e-bdd7-4913-9332-36ad136c9b8d",
+    "versionCounter": 2,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Assign credentials and retry settings",
+      "description": "Assign Header Auth credential, configure HTTP/Telegram retry settings, and set Asia/Jakarta timezone."
+    }
+  }
+]

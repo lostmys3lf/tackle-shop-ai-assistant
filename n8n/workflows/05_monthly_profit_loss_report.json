@@ -1,0 +1,145 @@
+[
+  {
+    "updatedAt": "2026-11-13T11:37:44.885Z",
+    "createdAt": "2026-11-13T11:37:16.253Z",
+    "id": "DTXiBaIRRcrNEqh5",
+    "name": "5 - Laporan Laba Rugi Bulanan",
+    "description": "Laporan laba rugi bulanan ke Telegram pemilik toko setiap tanggal 1 pukul 08.00 WIB.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "5fc6890c-ad59-4faa-89a6-1156ab6c4f74",
+        "name": "Jadwal Bulanan Tanggal 1 08.00 WIB",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "months",
+                "monthsInterval": 1,
+                "triggerAtDayOfMonth": 1,
+                "triggerAtHour": 8,
+                "triggerAtMinute": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "fc35b3c5-7057-404e-a569-7c7ac1aaa4b4",
+        "name": "Ambil Laporan Laba Rugi Bulanan",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          224,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/profit-loss",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "f3297e33-a363-4458-bebb-e3270c86cf57",
+        "name": "Kirim Laporan Laba Rugi ke Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          448,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "1191657048",
+          "text": "={{ $json.summary_text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "17b0b1c0-3392-4945-ba50-e035ea5f249b",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      }
+    ],
+    "connections": {
+      "Jadwal Bulanan Tanggal 1 08.00 WIB": {
+        "main": [
+          [
+            {
+              "node": "Ambil Laporan Laba Rugi Bulanan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Laba Rugi Bulanan": {
+        "main": [
+          [
+            {
+              "node": "Kirim Laporan Laba Rugi ke Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true,
+      "timezone": "Asia/Jakarta"
+    },
+    "staticData": {
+      "node:Jadwal Bulanan Tanggal 1 08.00 WIB": {
+        "recurrenceRules": [
+          null
+        ],
+        "recurrenceRuleSignatures": [
+          null
+        ]
+      }
+    },
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [],
+    "pinData": null,
+    "versionId": "92261571-8999-4120-9d7c-d8513f9ab187",
+    "activeVersionId": "92261571-8999-4120-9d7c-d8513f9ab187",
+    "versionCounter": 2,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Assign credentials and retry settings",
+      "description": "Assign Header Auth credential, configure HTTP/Telegram retry settings, and set Asia/Jakarta timezone."
+    }
+  }
+]
