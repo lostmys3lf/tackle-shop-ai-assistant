@@ -29,6 +29,13 @@ COPY db/ ./db/
 # Install project
 RUN uv sync --frozen --no-dev
 
+# Buat user sistem non-root untuk menjalankan service API
+RUN groupadd --system appuser \
+    && useradd --system --gid appuser --create-home --shell /usr/sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
 # Port yang diekspos
 EXPOSE 8000
 
