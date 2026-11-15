@@ -1,0 +1,10 @@
+{$SSLIP_HOST} {
+	# Hanya jalur webhook Telegram yang diteruskan ke n8n; editor dan endpoint lain ditutup
+	handle /webhook/* {
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}

@@ -19,9 +19,12 @@ COPY pyproject.toml uv.lock ./
 # Install dependensi tanpa dev dependencies
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Salin kode aplikasi dan prompt LLM
+# Salin kode aplikasi, prompt LLM, migrasi Alembic, dan seed awal
 COPY app/ ./app/
 COPY prompts/ ./prompts/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/
+COPY db/ ./db/
 
 # Install project
 RUN uv sync --frozen --no-dev

@@ -73,7 +73,7 @@ Selesai kalau dashboard menampilkan data setelah beberapa pesan dikirim.
 Provider OCR lewat `OCR_PROVIDER`: PaddleOCR-VL (lokal) dan Qwen vision di Groq.
 Selesai kalau foto nota asli menghasilkan transaksi `pending` lewat ekstraktor yang sama, dan hasil tes nota asli masuk ke dataset eval.
 
-## Task 14: Deploy ke GCP `[ ]`
+## Task 14: Deploy ke GCP `[x]`
 Satu VM Compute Engine menjalankan Docker Compose, plus README bahasa Inggris (arsitektur, cara jalan, keputusan desain, roadmap).
 Selesai kalau sistem bisa dipakai dari HP saat laptop mati, dan langkah backup sebelum 26 November 2026 tertulis di README.
 
