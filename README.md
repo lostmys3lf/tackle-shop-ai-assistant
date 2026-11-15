@@ -18,9 +18,9 @@ n8n (Orchestration & Schedules)
      ▼
 FastAPI Backend (Clean Architecture)
   ├── api/             Request/response validation only (FastAPI)
-  ├── services/        Use cases: router, extractor, transactions, reports, read-only agent
+  ├── services/        Use cases: router, extractor, transactions, reports, promo, read-only agent
   ├── domain/          Pure Python models, double-entry accounting, average-cost COGS rules
-  └── infrastructure/  PostgreSQL (SQLAlchemy + Alembic), LLM client (Groq), Langfuse tracing
+  └── infrastructure/  PostgreSQL (SQLAlchemy + Alembic), LLM client (Groq), OCR (Groq Vision / Paddle), Langfuse tracing
      │
      ├──► PostgreSQL 18 (Double-entry journals, stock movements, idempotent transactions)
      ├──► Prometheus + Grafana (Metrics & dashboards on localhost / SSH tunnel only)
@@ -33,12 +33,13 @@ FastAPI Backend (Clean Architecture)
 - **Modular channel adapter**: Business logic lives in FastAPI; Telegram polling/webhooks, inline keyboards, owner allowlists, and scheduled jobs live in `n8n/workflows/`, allowing channel migration (e.g., to WhatsApp) without changing backend code.
 
 ### n8n Workflows
-- `01_incoming_message.json` — Webhook entry point, owner allowlist check, temporary typing status, `POST /messages` routing, inline confirmation keyboard, and hierarchical `/start` / `/menu` entry.
+- `01_incoming_message.json` — Webhook entry point, owner allowlist check, temporary typing status, Telegram photo download (`file:get` -> base64), `POST /messages` routing, inline confirmation keyboard, and hierarchical `/start` / `/menu` entry.
 - `02_transaction_confirmation.json` — Handles `confirm:` / `reject:` inline callbacks and removes stale buttons.
 - `03_low_stock_alert.json` — Daily low-stock alert at `20:00 WIB` (`Asia/Jakarta`).
 - `04_weekly_sales_report.json` — Weekly sales report every Sunday at `20:00 WIB`.
 - `05_monthly_profit_loss_report.json` — Monthly simplified profit & loss report on the 1st of every month at `08:00 WIB`.
 - `06_menu_navigation.json` — Stateless hybrid inline menu navigation (`menu:*` callbacks and `GET /products` by category).
+- `07_weekly_slow_moving_promo.json` — Weekly slow-moving promo recommendations and bundling captions every Monday at `09:00 WIB` via `POST /promo/slow-moving`.
 
 ## Design Decisions
 
@@ -46,6 +47,8 @@ Key architectural and operational choices are documented chronologically in [`do
 - **Clean Architecture & pure domain layer**: `app/domain/` has zero imports from FastAPI, SQLAlchemy, or LLM SDKs, keeping accounting invariants testable in isolation.
 - **Weighted-average cost (HPP rata-rata)**: Simpler and better suited to uniform unit-bought/unit-sold inventory than FIFO lot tracking for v1.
 - **Groq OpenAI-compatible inference + fallback**: Primary `openai/gpt-oss-120b` with Pydantic validation retry and automatic fallback to `openai/gpt-oss-20b`.
+- **Configurable receipt OCR (`OCR_PROVIDER`)**: Defaults to `groq_vision` (`qwen/qwen3.8-27b` routed through `LLMClient` + `prompts/ocr_v1.txt`) with an optional lazy-imported local `PaddleOCRProvider` adapter (`paddle`), piping transcribed receipts straight into `TransactionExtractor` (`source=photo`).
+- **Deterministic slow-moving bundling**: `POST /promo/slow-moving` calculates slow-moving stock stats and candidate bundle prices (up to 5% discount rounded in Rp500 steps, strictly above combined `avg_cost`) in Python before asking `promo_v1` to write promotional captions.
 - **Stateless hybrid Telegram menu**: Sub-workflow navigation callbacks (`menu:*`) stay separated from transaction confirmation (`confirm:`/`reject:`), while allowing free-form chat at any time.
 - **IPv4-first DNS in n8n & idempotent webhook republish**: `NODE_OPTIONS=--dns-result-order=ipv4first` prevents container IPv6 timeouts to `api.telegram.org`, and deployment scripts republish webhook workflows so Telegram targets the active host reliably.
 - **Single-VM GCP deployment with `sslip.io` + Caddy**: Avoids buying a domain or running Cloudflared on GCP while strictly exposing only `/webhook/*` over automatic Let's Encrypt HTTPS on ports `80/443`.

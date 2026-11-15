@@ -134,11 +134,13 @@ Tools read-only, semua angka dihitung SQL atau Python:
 
 ## 12. Workflow n8n
 Workflow diekspor ke `n8n/workflows/*.json` dan ikut di-commit.
-1. Pesan masuk: Telegram Trigger, cek allowlist pemilik, kirim status proses sementara (`"⏳ Sebentar ya, sedang memproses pesan..."`), panggil `POST /messages`, lalu ubah pesan sementara (`editMessageText`) menjadi balasan atau tombol konfirmasi (inline keyboard Telegram). Perintah `/start` mengembalikan panduan chat yang dikelompokkan per kategori produk (`peralatan`, `bahan_umpan`) serta contoh cek stok/laporan.
+1. Pesan masuk: Telegram Trigger, cek allowlist pemilik, kirim status proses sementara (`"⏳ Sebentar ya, sedang memproses pesan..."`), unduh & ubah foto nota ke base64 jika pesan berupa foto (`file:get` + `extractFromFile`), panggil `POST /messages`, lalu ubah pesan sementara (`editMessageText`) menjadi balasan atau tombol konfirmasi (inline keyboard Telegram). Perintah `/start` mengembalikan panduan chat yang dikelompokkan per kategori produk (`peralatan`, `bahan_umpan`) serta contoh cek stok/laporan.
 2. Konfirmasi: callback dari tombol Benar / Salah, panggil confirm atau reject, kirim hasilnya dan hapus tombol pada pesan lama.
-3. Alert stok menipis (harian, jam 20.00 WIB (usulan)).
-4. Laporan penjualan (mingguan, Minggu jam 20.00 WIB (usulan)).
-5. Laba rugi sederhana (bulanan, tanggal 1 jam 08.00 WIB (usulan)).
+3. Alert stok menipis (harian, jam 20.00 WIB).
+4. Laporan penjualan (mingguan, Minggu jam 20.00 WIB).
+5. Laba rugi sederhana (bulanan, tanggal 1 jam 08.00 WIB).
+6. Navigasi menu berjenjang Telegram (`06_menu_navigation.json`, callback `menu:*` + `GET /products`).
+7. Rekomendasi promo barang lambat laku (mingguan, Senin jam 09.00 WIB via `POST /promo/slow-moving`, `07_weekly_slow_moving_promo.json`).
 
 Catatan pengembangan UX Telegram (dikerjakan setelah Task 11, saat seluruh endpoint laporan tersedia):
 - **Menu berjenjang hybrid (tombol inline + tetap bebas ketik langsung)**:
@@ -158,8 +160,8 @@ Catatan pengembangan UX Telegram (dikerjakan setelah Task 11, saat seluruh endpo
 
 ## 14. CI (GitHub Actions)
 - Setiap push: `black --check`, `pylint`, `pytest`.
-- Eval: manual (`workflow_dispatch`) dan saat ada perubahan di `prompts/` atau `app/infrastructure/llm/`. Butuh secret `LLM_API_KEY` (opsional secret `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`). `LLM_BASE_URL`, `LLM_MODEL`, dan `LLM_FALLBACK_MODEL` disimpan sebagai repository variable, bukan secret, karena nggak rahasia. Hasil eval disimpan sebagai artifact GitHub Actions, dan ikut dicatat ke Langfuse kalau env Langfuse diisi lewat secret.
-- Deploy otomatis (Level 2, lihat bagian 17): push ke `main`, test dan eval lulus, build image, push ke registry, lalu VM GCP menarik image baru dan menjalankan `docker compose up -d`.
+- Eval: manual (`workflow_dispatch`) dan saat ada perubahan di `prompts/`, `app/infrastructure/llm/`, `app/infrastructure/ocr/`, atau `evals/`. Butuh secret `LLM_API_KEY` (opsional secret `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`). `LLM_BASE_URL`, `LLM_MODEL`, dan `LLM_FALLBACK_MODEL` disimpan sebagai repository variable, bukan secret, karena nggak rahasia. Hasil eval disimpan sebagai artifact GitHub Actions, dan ikut dicatat ke Langfuse kalau env Langfuse diisi lewat secret.
+- Deploy otomatis (Task 15 opsional, lihat bagian 17): push ke `main`, test dan eval lulus, build image, push ke registry, lalu VM GCP menarik image baru dan menjalankan `docker compose up -d`. Untuk v1, deployment ke VM dijalankan manual lewat `scripts/deploy_gcp.ps1`.
 
 ## 15. Struktur folder dan arsitektur
 Pakai Clean Architecture versi ringan dengan empat lapisan.
