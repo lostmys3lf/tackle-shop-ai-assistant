@@ -1,10 +1,18 @@
 """Integration and unit tests for messages and transactions API endpoints."""
 
 from decimal import Decimal
+import secrets
 from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.messages import (
+    MAX_CHANNEL_LENGTH,
+    MAX_CHAT_ID_LENGTH,
+    MAX_IMAGE_BASE64_LENGTH,
+    MAX_TEXT_LENGTH,
+)
+from app.api.security import verify_api_key
 from app.config import settings
 from app.domain.models import DomainProduct
 from app.infrastructure.llm.extractor import (
@@ -15,6 +23,7 @@ from app.infrastructure.llm.extractor import (
 from app.infrastructure.llm.router import MessageIntent, MessageRoutingResult
 from app.main import app
 from app.services.message_service import _format_currency
+from app.services.transaction_service import InvalidStatusError
 
 client = TestClient(app)
 AUTH_HEADERS = {"X-API-Key": settings.api_secret}
@@ -480,3 +489,55 @@ def test_transactions_confirm_and_reject_api():
         assert res.status_code == 200
         data = res.json()
         assert data["status"] == "rejected"
+
+
+def test_transactions_confirm_invalid_status_returns_400():
+    """Verify confirming an already-confirmed transaction maps InvalidStatusError to 400."""
+    with patch(
+        "app.api.transactions.confirm_transaction",
+        side_effect=InvalidStatusError(
+            "Transaksi ID 42 tidak dapat dikonfirmasi karena berstatus 'confirmed'."
+        ),
+    ):
+        res = client.post("/transactions/42/confirm", headers=AUTH_HEADERS)
+        assert res.status_code == 400
+        assert "confirmed" in res.json()["detail"]
+
+
+def test_verify_api_key_uses_constant_time_compare():
+    """Verify verify_api_key compares secrets via secrets.compare_digest."""
+    with patch(
+        "app.api.security.secrets.compare_digest", wraps=secrets.compare_digest
+    ) as mock_cmp:
+        assert verify_api_key(settings.api_secret) == settings.api_secret
+        assert mock_cmp.call_count == 1
+
+
+def test_post_messages_rejects_oversized_fields_with_422():
+    """Verify oversized channel, chat_id, text, or image_base64 returns HTTP 422."""
+    oversized_payloads = [
+        {
+            "channel": "a" * (MAX_CHANNEL_LENGTH + 1),
+            "chat_id": "user123",
+            "text": "halo",
+        },
+        {
+            "channel": "telegram",
+            "chat_id": "1" * (MAX_CHAT_ID_LENGTH + 1),
+            "text": "halo",
+        },
+        {
+            "channel": "telegram",
+            "chat_id": "user123",
+            "text": "x" * (MAX_TEXT_LENGTH + 1),
+        },
+        {
+            "channel": "telegram",
+            "chat_id": "user123",
+            "image_base64": "A" * (MAX_IMAGE_BASE64_LENGTH + 1),
+        },
+    ]
+
+    for payload in oversized_payloads:
+        res = client.post("/messages", headers=AUTH_HEADERS, json=payload)
+        assert res.status_code == 422

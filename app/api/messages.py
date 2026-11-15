@@ -1,21 +1,26 @@
 """Messages API router for incoming chat handling."""
 
 from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.security import verify_api_key
 from app.services.message_service import MessageService
 
 router = APIRouter(tags=["Messages"], dependencies=[Depends(verify_api_key)])
 
+MAX_CHANNEL_LENGTH = 32
+MAX_CHAT_ID_LENGTH = 64
+MAX_TEXT_LENGTH = 4000
+MAX_IMAGE_BASE64_LENGTH = 10 * 1024 * 1024
+
 
 class MessageRequest(BaseModel):
     """Schema for incoming message webhook payload."""
 
-    channel: str
-    chat_id: str
-    text: str | None = None
-    image_base64: str | None = None
+    channel: str = Field(max_length=MAX_CHANNEL_LENGTH)
+    chat_id: str = Field(max_length=MAX_CHAT_ID_LENGTH)
+    text: str | None = Field(default=None, max_length=MAX_TEXT_LENGTH)
+    image_base64: str | None = Field(default=None, max_length=MAX_IMAGE_BASE64_LENGTH)
 
 
 class MessageResponse(BaseModel):

@@ -1,5 +1,7 @@
 """API security dependencies for endpoint authentication."""
 
+import secrets
+
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
@@ -17,7 +19,10 @@ def verify_api_key(
         raise RuntimeError(
             "API_SECRET is empty; set it before calling protected endpoints."
         )
-    if not header_value or header_value != settings.api_secret:
+    if not header_value or not secrets.compare_digest(
+        header_value.encode("utf-8"),
+        settings.api_secret.encode("utf-8"),
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Kunci API (X-API-Key) tidak valid atau belum disertakan.",
