@@ -1,0 +1,203 @@
+[
+  {
+    "id": "WkPromo07SlowMov",
+    "name": "7 - Rekomendasi Promo Barang Mingguan",
+    "description": "Mengambil rekomendasi promo dan bundling barang lambat laku setiap Senin pukul 09.00 WIB lalu mengirimkannya ke Telegram pemilik toko.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "b1f62e8a-74aa-4fd9-a8de-0c4a6b550001",
+        "name": "Jadwal Mingguan Senin 09.00 WIB",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          0,
+          96
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "weeks",
+                "weeksInterval": 1,
+                "triggerAtDay": [
+                  1
+                ],
+                "triggerAtHour": 9,
+                "triggerAtMinute": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "b1f62e8a-74aa-4fd9-a8de-0c4a6b550002",
+        "name": "Buat Rekomendasi Promo",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          224,
+          96
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://api:8000/promo/slow-moving",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "contentType": "json",
+          "specifyBody": "keypair",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "window_days",
+                "value": "={{ 30 }}"
+              },
+              {
+                "name": "limit",
+                "value": "={{ 3 }}"
+              }
+            ]
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 2000
+      },
+      {
+        "id": "b1f62e8a-74aa-4fd9-a8de-0c4a6b550003",
+        "name": "Ada Barang Lambat Laku?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          448,
+          96
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-slow-moving",
+                "leftValue": "={{ $json.has_slow_moving }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "b1f62e8a-74aa-4fd9-a8de-0c4a6b550004",
+        "name": "Kirim Rekomendasi Promo ke Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          672,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "1191657048",
+          "text": "={{ $json.summary_text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "webhookId": "b1f62e8a-74aa-4fd9-a8de-0c4a6b559904",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "b1f62e8a-74aa-4fd9-a8de-0c4a6b550005",
+        "name": "Tidak Ada Promo",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          672,
+          192
+        ],
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "Jadwal Mingguan Senin 09.00 WIB": {
+        "main": [
+          [
+            {
+              "node": "Buat Rekomendasi Promo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Buat Rekomendasi Promo": {
+        "main": [
+          [
+            {
+              "node": "Ada Barang Lambat Laku?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ada Barang Lambat Laku?": {
+        "main": [
+          [
+            {
+              "node": "Kirim Rekomendasi Promo ke Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Tidak Ada Promo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true,
+      "timezone": "Asia/Jakarta"
+    },
+    "staticData": null,
+    "pinData": null,
+    "versionId": "c1f62e8a-74aa-4fd9-a8de-0c4a6b550007",
+    "activeVersionId": "c1f62e8a-74aa-4fd9-a8de-0c4a6b550007",
+    "versionCounter": 1,
+    "triggerCount": 1,
+    "sourceWorkflowId": null,
+    "tags": []
+  }
+]

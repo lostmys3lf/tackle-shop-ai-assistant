@@ -8,6 +8,7 @@ from app.api.health import router as health_router
 from app.api.messages import router as messages_router
 from app.api.metrics import router as metrics_router
 from app.api.products import router as products_router
+from app.api.promo import router as promo_router
 from app.api.reports import router as reports_router
 from app.api.transactions import router as transactions_router
 from app.infrastructure.monitoring.metrics import record_http_request
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
     application.include_router(messages_router)
     application.include_router(metrics_router)
     application.include_router(products_router)
+    application.include_router(promo_router)
     application.include_router(reports_router)
     application.include_router(transactions_router)
     return application

@@ -155,3 +155,26 @@ class ProfitLossData:
     total_sales: Decimal
     total_cogs: Decimal
     gross_profit: Decimal
+
+
+@dataclass
+class ProductMovementStats:
+    """Aggregated inventory and sales velocity stats for promo analysis."""
+
+    product: DomainProduct
+    sold_qty_window: int
+    last_sold_date: date | None
+    days_since_last_sale: int | None
+    stock_value: Decimal
+
+
+@dataclass
+class BundleSuggestionData:
+    """Deterministic bundling price breakdown for a slow-moving product pair."""
+
+    slow_product: DomainProduct
+    partner_product: DomainProduct
+    normal_total_price: Decimal
+    bundle_price: Decimal
+    discount_amount: Decimal
+    discount_percent: int

@@ -3,7 +3,7 @@
 # pylint: disable=too-few-public-methods
 
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -14,6 +14,7 @@ from app.domain.models import (
     AccountCode,
     AccountingExecutionResult,
     DomainProduct,
+    ProductMovementStats,
     ProfitLossData,
     SalesSummaryData,
     TopProductData,
@@ -242,6 +243,143 @@ JAKARTA_TZ: tzinfo = _get_jakarta_tz()
 def get_jakarta_today() -> date:
     """Return current calendar date in Asia/Jakarta (WIB)."""
     return datetime.now(JAKARTA_TZ).date()
+
+
+def _to_jakarta_date(value: datetime | str | None) -> date | None:
+    """Normalize a database timestamp or ISO string to an Asia/Jakarta calendar date."""
+    if value is None:
+        return None
+    dt = datetime.fromisoformat(value) if isinstance(value, str) else value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(JAKARTA_TZ).date()
+
+
+def _build_movement_stat(
+    product_orm: Product,
+    sold_qty: int,
+    last_sold_date: date | None,
+    end_date: date,
+) -> ProductMovementStats:
+    """Assemble ProductMovementStats entity from ORM row and aggregated sale dates."""
+    domain_product = _to_domain_product(product_orm)
+    days_idle = (
+        max(0, (end_date - last_sold_date).days) if last_sold_date is not None else None
+    )
+    stock_value = (
+        Decimal(domain_product.stock_qty) * domain_product.avg_cost
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return ProductMovementStats(
+        product=domain_product,
+        sold_qty_window=sold_qty,
+        last_sold_date=last_sold_date,
+        days_since_last_sale=days_idle,
+        stock_value=stock_value,
+    )
+
+
+class PromoRepository:
+    """Repository querying product velocity and idle inventory data for promo suggestions."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize repository with database session."""
+        self.session = session
+
+    def _query_sold_quantities(
+        self,
+        start_utc: datetime,
+        end_utc: datetime,
+    ) -> dict[int, int]:
+        """Return confirmed sold quantity per product in UTC timestamp bounds."""
+        stmt = (
+            select(
+                TransactionItem.product_id,
+                func.coalesce(func.sum(TransactionItem.qty), 0).label("sold_qty"),
+            )
+            .join(Transaction, TransactionItem.transaction_id == Transaction.id)
+            .where(
+                and_(
+                    Transaction.type == TransactionType.SALE.value,
+                    Transaction.status == TransactionStatus.CONFIRMED.value,
+                    Transaction.confirmed_at.is_not(None),
+                    Transaction.confirmed_at >= start_utc,
+                    Transaction.confirmed_at < end_utc,
+                )
+            )
+            .group_by(TransactionItem.product_id)
+        )
+        return {
+            row.product_id: int(row.sold_qty)
+            for row in self.session.execute(stmt).all()
+        }
+
+    def _query_last_sale_dates(self) -> dict[int, date | None]:
+        """Return latest confirmed sale calendar date (WIB) per product."""
+        stmt = (
+            select(
+                TransactionItem.product_id,
+                func.max(Transaction.confirmed_at).label("last_confirmed_at"),
+            )
+            .join(Transaction, TransactionItem.transaction_id == Transaction.id)
+            .where(
+                and_(
+                    Transaction.type == TransactionType.SALE.value,
+                    Transaction.status == TransactionStatus.CONFIRMED.value,
+                    Transaction.confirmed_at.is_not(None),
+                )
+            )
+            .group_by(TransactionItem.product_id)
+        )
+        return {
+            row.product_id: _to_jakarta_date(row.last_confirmed_at)
+            for row in self.session.execute(stmt).all()
+        }
+
+    def get_product_movement_stats(
+        self,
+        window_days: int = 30,
+        reference_date: date | None = None,
+    ) -> list[ProductMovementStats]:
+        """Compute active product sales velocity and idle duration in Asia/Jakarta time."""
+        end_date = reference_date or get_jakarta_today()
+        start_utc, end_utc = _jakarta_date_range_to_utc(
+            end_date - timedelta(days=max(1, window_days) - 1),
+            end_date,
+        )
+
+        products = self.session.scalars(
+            select(Product).where(Product.stock_qty > 0).order_by(Product.id)
+        ).all()
+        if not products:
+            return []
+
+        sold_by_product = self._query_sold_quantities(start_utc, end_utc)
+        last_sale_by_product = self._query_last_sale_dates()
+
+        stats = [
+            _build_movement_stat(
+                product_orm=product_orm,
+                sold_qty=sold_by_product.get(product_orm.id, 0),
+                last_sold_date=last_sale_by_product.get(product_orm.id),
+                end_date=end_date,
+            )
+            for product_orm in products
+        ]
+
+        # Urutkan dari penjualan terendah, paling lama tidak laku, lalu nilai stok terbesar
+        stats.sort(
+            key=lambda item: (
+                item.sold_qty_window,
+                -(
+                    item.days_since_last_sale
+                    if item.days_since_last_sale is not None
+                    else 10**9
+                ),
+                -item.stock_value,
+                item.product.id or 0,
+            )
+        )
+        return stats
 
 
 def _jakarta_date_range_to_utc(
