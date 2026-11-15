@@ -156,7 +156,10 @@ if (-not $SkipWorkflowSync) {
     # Publikasikan sub-workflow dan trigger jadwal lebih dulu, lalu webhook utama (01)
     $Ordered = $WorkflowEntries | Sort-Object { if ($_.File.StartsWith("01_")) { "99_" + $_.File } else { $_.File } }
     foreach ($entry in $Ordered) {
-        $ImportLines.Add("sudo docker cp `"$RemoteDir/n8n/workflows/$($entry.File)`" tackle-n8n:/tmp/$($entry.File)")
+        # Chat ID pemilik di repo berupa placeholder; isi dari .env VM sebelum import
+        $ImportLines.Add("sed `"s/__TELEGRAM_OWNER_CHAT_ID__/`$OWNER_CHAT_ID/g`" `"$RemoteDir/n8n/workflows/$($entry.File)`" > /tmp/$($entry.File)")
+        $ImportLines.Add("sudo docker cp /tmp/$($entry.File) tackle-n8n:/tmp/$($entry.File)")
+        $ImportLines.Add("rm -f /tmp/$($entry.File)")
         $ImportLines.Add("sudo docker compose -f docker-compose.prod.yml exec -T n8n n8n import:workflow --input=/tmp/$($entry.File)")
         $ImportLines.Add("sudo docker compose -f docker-compose.prod.yml exec -u root -T n8n rm -f /tmp/$($entry.File)")
         $PublishLines.Add("sudo docker compose -f docker-compose.prod.yml exec -T n8n n8n unpublish:workflow --id=$($entry.Id) >/dev/null 2>&1 || true")
@@ -165,6 +168,11 @@ if (-not $SkipWorkflowSync) {
     }
     $WorkflowScript = @"
 cd "$RemoteDir"
+OWNER_CHAT_ID=`$(grep -E '^TELEGRAM_OWNER_CHAT_ID=' .env | tail -n 1 | cut -d= -f2- | tr -d '\r" ' || true)
+if ! [[ "`$OWNER_CHAT_ID" =~ ^-?[0-9]+`$ ]]; then
+  echo "TELEGRAM_OWNER_CHAT_ID kosong atau tidak valid di .env VM" >&2
+  exit 1
+fi
 $($ImportLines -join "`n")
 $($PublishLines -join "`n")
 sudo docker compose -f docker-compose.prod.yml exec -T n8n n8n list:workflow

@@ -68,7 +68,7 @@
         "parameters": {
           "resource": "message",
           "operation": "sendMessage",
-          "chatId": "1191657048",
+          "chatId": "__TELEGRAM_OWNER_CHAT_ID__",
           "text": "={{ $json.summary_text }}",
           "additionalFields": {
             "appendAttribution": false

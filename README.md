@@ -105,7 +105,7 @@ Key architectural and operational choices are documented chronologically in [`do
    docker compose exec api alembic upgrade head
    docker compose exec api python -m app.infrastructure.db.seed
    ```
-4. Capture the temporary Cloudflare Quick Tunnel URL from logs (`docker logs tackle-cloudflared`), update `WEBHOOK_URL` in `.env`, recreate `n8n`, configure n8n credentials (`Telegram Bot` and `Header Auth` for `X-API-Key`), import `n8n/workflows/*.json`, and publish the workflows.
+4. Capture the temporary Cloudflare Quick Tunnel URL from logs (`docker logs tackle-cloudflared`), update `WEBHOOK_URL` in `.env`, recreate `n8n`, configure n8n credentials (`Telegram Bot` and `Header Auth` for `X-API-Key`), import `n8n/workflows/*.json` (replace the `__TELEGRAM_OWNER_CHAT_ID__` placeholder with your owner chat ID first; `scripts/deploy_gcp.ps1` does this automatically on the VM), and publish the workflows.
 
 ### One-Click Local Restart (After GCP VM Teardown)
 After the GCP VM has been torn down (or when operating purely locally), run [`start.bat`](start.bat) from the project root. It starts Docker Compose, extracts the latest Quick Tunnel URL from `tackle-cloudflared`, updates `WEBHOOK_URL` in `.env`, recreates `n8n`, republishes the Telegram webhook workflow, and displays service status.

@@ -191,7 +191,7 @@ def test_post_messages_photo_creates_pending_transaction_with_photo_source():
             headers=AUTH_HEADERS,
             json={
                 "channel": "telegram",
-                "chat_id": "1191657048",
+                "chat_id": "123456789",
                 "text": "Nota penjualan hari ini",
                 "image_base64": SAMPLE_PNG_B64,
             },
@@ -235,7 +235,7 @@ def test_post_messages_photo_handles_ocr_error_gracefully():
             headers=AUTH_HEADERS,
             json={
                 "channel": "telegram",
-                "chat_id": "1191657048",
+                "chat_id": "123456789",
                 "text": "",
                 "image_base64": SAMPLE_PNG_B64,
             },

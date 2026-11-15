@@ -42,7 +42,7 @@
               {
                 "id": "owner-callback-check",
                 "leftValue": "={{ String($json.callback_query?.from?.id ?? $json.callback_query?.message?.chat?.id ?? \"\") }}",
-                "rightValue": "1191657048",
+                "rightValue": "__TELEGRAM_OWNER_CHAT_ID__",
                 "operator": {
                   "type": "string",
                   "operation": "equals"
