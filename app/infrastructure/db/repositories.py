@@ -115,9 +115,11 @@ class TransactionRepository:
         self.session.flush()
         return tx
 
-    def get_by_id(self, tx_id: int) -> Transaction | None:
-        """Retrieve transaction by ID including loaded items."""
+    def get_by_id(self, tx_id: int, for_update: bool = False) -> Transaction | None:
+        """Retrieve transaction by ID, optionally locking the row for update."""
         stmt = select(Transaction).where(Transaction.id == tx_id)
+        if for_update:
+            stmt = stmt.with_for_update()
         return self.session.scalars(stmt).first()
 
     def reject_transaction(self, tx_id: int) -> Transaction | None:

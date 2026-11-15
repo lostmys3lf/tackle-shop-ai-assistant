@@ -50,7 +50,8 @@ def confirm_transaction(tx_id: int) -> dict[str, Any]:
         tx_repo = TransactionRepository(session)
         prod_repo = ProductRepository(session)
 
-        tx = tx_repo.get_by_id(tx_id)
+        # Kunci baris transaksi agar pengecekan status dan pembaruan stok/jurnal aman dari race
+        tx = tx_repo.get_by_id(tx_id, for_update=True)
         if tx is None:
             raise TransactionNotFoundError(f"Transaksi ID {tx_id} tidak ditemukan.")
 
@@ -117,7 +118,8 @@ def reject_transaction(tx_id: int) -> dict[str, Any]:
     with get_session() as session:
         tx_repo = TransactionRepository(session)
 
-        tx = tx_repo.get_by_id(tx_id)
+        # Kunci baris transaksi agar pengecekan status dan pembatalan aman dari race
+        tx = tx_repo.get_by_id(tx_id, for_update=True)
         if tx is None:
             raise TransactionNotFoundError(f"Transaksi ID {tx_id} tidak ditemukan.")
 

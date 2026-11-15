@@ -217,3 +217,28 @@ def test_reject_transaction_success_and_errors():
             res = reject_transaction(7)
             assert res["status"] == "rejected"
             assert mock_tx_repo.reject_transaction.call_count == 1
+
+
+def test_confirm_and_reject_lock_transaction_row_for_update():
+    """Verify confirm and reject acquire a FOR UPDATE lock when loading the transaction."""
+    with patch("app.services.transaction_service.get_session"):
+        with patch(
+            "app.services.transaction_service.TransactionRepository"
+        ) as mock_tx_repo_cls:
+            mock_tx_repo = mock_tx_repo_cls.return_value
+            mock_tx_repo.get_by_id.return_value = type(
+                "MockTx", (), {"id": 11, "status": "confirmed"}
+            )()
+
+            with pytest.raises(InvalidStatusError):
+                confirm_transaction(11)
+            mock_tx_repo.get_by_id.assert_called_once_with(11, for_update=True)
+
+            mock_tx_repo.get_by_id.reset_mock()
+            mock_tx_repo.get_by_id.return_value = type(
+                "MockTx", (), {"id": 12, "status": "rejected"}
+            )()
+
+            with pytest.raises(InvalidStatusError):
+                reject_transaction(12)
+            mock_tx_repo.get_by_id.assert_called_once_with(12, for_update=True)
