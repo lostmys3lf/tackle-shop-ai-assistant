@@ -21,7 +21,7 @@ Di luar scope versi pertama: neraca saldo, jurnal penyesuaian, neraca, laporan p
 ## 3. Hal yang belum diputuskan
 - Channel chat: Telegram (diputuskan, karena gratis dan setup-nya mudah). FastAPI tetap dibuat netral terhadap channel dan semua urusan channel ada di n8n, supaya nanti bisa pindah ke WhatsApp tanpa mengubah FastAPI.
 - Data produk awal: 5 produk di `db/seed/products.csv`. Harga jual asli dari toko. Harga beli masih dummy, dihitung dari markup 20% di atas harga pokok (`harga beli = harga jual / 1,2`). Stok dan stok minimal juga dummy. Kategori: `peralatan` dan `bahan_umpan`.
-- Jam pengiriman laporan otomatis. `TBD`.
+- Jam pengiriman laporan otomatis (usulan): alert stok menipis harian 20.00 WIB, laporan penjualan mingguan Minggu 20.00 WIB, laba rugi bulanan tanggal 1 jam 08.00 WIB.
 - Metode pembayaran selain tunai. `TBD`. Versi pertama mengasumsikan semua transaksi tunai.
 - Barang yang dibeli per kemasan tapi dijual per biji (misalnya kail isi 13 per bungkus), dan apakah varian ukuran (kail no. 1-15, senar dengan beberapa ukuran) dicatat terpisah atau digabung. `TBD`, ditunda setelah alur inti jalan. Versi pertama hanya menangani produk yang satuan beli dan jualnya sama.
 
@@ -136,9 +136,9 @@ Tools read-only, semua angka dihitung SQL atau Python:
 Workflow diekspor ke `n8n/workflows/*.json` dan ikut di-commit.
 1. Pesan masuk: Telegram Trigger, cek allowlist pemilik, kirim status proses sementara (`"⏳ Sebentar ya, sedang memproses pesan..."`), panggil `POST /messages`, lalu ubah pesan sementara (`editMessageText`) menjadi balasan atau tombol konfirmasi (inline keyboard Telegram). Perintah `/start` mengembalikan panduan chat yang dikelompokkan per kategori produk (`peralatan`, `bahan_umpan`) serta contoh cek stok/laporan.
 2. Konfirmasi: callback dari tombol Benar / Salah, panggil confirm atau reject, kirim hasilnya dan hapus tombol pada pesan lama.
-3. Alert stok menipis (harian, jam `TBD`).
-4. Laporan penjualan (mingguan, jam `TBD`).
-5. Laba rugi sederhana (bulanan, jam `TBD`).
+3. Alert stok menipis (harian, jam 20.00 WIB (usulan)).
+4. Laporan penjualan (mingguan, Minggu jam 20.00 WIB (usulan)).
+5. Laba rugi sederhana (bulanan, tanggal 1 jam 08.00 WIB (usulan)).
 
 Catatan pengembangan UX Telegram (dikerjakan setelah Task 11, saat seluruh endpoint laporan tersedia):
 - **Menu berjenjang hybrid (tombol inline + tetap bebas ketik langsung)**:

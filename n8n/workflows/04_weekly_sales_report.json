@@ -4,13 +4,13 @@
     "createdAt": "2026-11-13T11:37:13.663Z",
     "id": "u4TiJNT4bELFzgO9",
     "name": "4 - Laporan Penjualan Mingguan",
-    "description": "Laporan penjualan mingguan ke Telegram pemilik toko setiap Senin pukul 08.00 WIB.",
+    "description": "Laporan penjualan mingguan ke Telegram pemilik toko setiap Minggu pukul 20.00 WIB.",
     "active": true,
     "isArchived": false,
     "nodes": [
       {
         "id": "a7c5dffb-32cc-4828-9dfe-a621b989a3d4",
-        "name": "Jadwal Mingguan Senin 08.00 WIB",
+        "name": "Jadwal Mingguan Minggu 20.00 WIB",
         "type": "n8n-nodes-base.scheduleTrigger",
         "typeVersion": 1.4,
         "position": [
@@ -24,9 +24,9 @@
                 "field": "weeks",
                 "weeksInterval": 1,
                 "triggerAtDay": [
-                  1
+                  0
                 ],
-                "triggerAtHour": 8,
+                "triggerAtHour": 20,
                 "triggerAtMinute": 0
               }
             ]
@@ -89,7 +89,7 @@
       }
     ],
     "connections": {
-      "Jadwal Mingguan Senin 08.00 WIB": {
+      "Jadwal Mingguan Minggu 20.00 WIB": {
         "main": [
           [
             {
@@ -118,7 +118,7 @@
       "timezone": "Asia/Jakarta"
     },
     "staticData": {
-      "node:Jadwal Mingguan Senin 08.00 WIB": {
+      "node:Jadwal Mingguan Minggu 20.00 WIB": {
         "recurrenceRules": [
           null
         ],

@@ -4,13 +4,13 @@
     "createdAt": "2026-11-13T11:37:10.723Z",
     "id": "CDRbqt6a9kDPA58J",
     "name": "3 - Alert Stok Menipis Harian",
-    "description": "Alert harian stok menipis ke Telegram pemilik toko pada pukul 08.00 WIB.",
+    "description": "Alert harian stok menipis ke Telegram pemilik toko pada pukul 20.00 WIB.",
     "active": true,
     "isArchived": false,
     "nodes": [
       {
         "id": "a1035793-b3d9-42db-8cb6-0c0c41043d0e",
-        "name": "Jadwal Harian 08.00 WIB",
+        "name": "Jadwal Harian 20.00 WIB",
         "type": "n8n-nodes-base.scheduleTrigger",
         "typeVersion": 1.4,
         "position": [
@@ -23,7 +23,7 @@
               {
                 "field": "days",
                 "daysInterval": 1,
-                "triggerAtHour": 8,
+                "triggerAtHour": 20,
                 "triggerAtMinute": 0
               }
             ]
@@ -129,7 +129,7 @@
       }
     ],
     "connections": {
-      "Jadwal Harian 08.00 WIB": {
+      "Jadwal Harian 20.00 WIB": {
         "main": [
           [
             {
@@ -176,7 +176,7 @@
       "timezone": "Asia/Jakarta"
     },
     "staticData": {
-      "node:Jadwal Harian 08.00 WIB": {
+      "node:Jadwal Harian 20.00 WIB": {
         "recurrenceRules": [
           null
         ],

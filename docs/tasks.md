@@ -80,6 +80,7 @@ Selesai kalau sistem bisa dipakai dari HP saat laptop mati, dan langkah backup s
 ## Task 15: Deploy otomatis (MLOps Level 2, opsional) `[ ]`
 GitHub Actions sesuai spec bagian 14 dan 17: setelah test dan eval lulus di `main`, build image bertag commit SHA, push ke registry, lalu deploy ke VM GCP.
 Selesai kalau satu perubahan prompt yang lulus eval otomatis sampai ke VM tanpa langkah manual, dan rollback ke tag sebelumnya sudah dicoba sekali. Kerjakan hanya kalau masih sempat sebelum 26 November 2026.
+Catatan: opsional, tidak dikerjakan.
 
 ## Task 16: Promo barang nggak laku `[ ]`
 `POST /promo/slow-moving` dan workflow n8n mingguan.
