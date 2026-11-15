@@ -4,6 +4,10 @@ An operational bookkeeping, inventory, and reporting assistant for a traditional
 
 [![Solution architecture](assets/architecture.png)](assets/architecture.png)
 
+**Demo video (97 s):** every feature on the live bot, from recording sales and reading handwritten notes to agent answers and scheduled reports.
+
+[![Watch the demo video](assets/demo_thumbnail.png)](https://drive.google.com/file/d/11h7ZYdYHfA7uQDi_rJo0psXd2ksiSW56/view?usp=sharing)
+
 ## Architecture
 
 The system separates conversational channel handling from deterministic accounting logic:
