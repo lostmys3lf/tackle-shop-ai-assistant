@@ -2,6 +2,8 @@
 
 An operational bookkeeping, inventory, and reporting assistant for a traditional fishing tackle shop (*toko perlengkapan mancing*). The shop owner chats naturally in Indonesian over Telegram (to log sales/purchases or ask questions about stock, revenue, and profit), while a deterministic Python backend computes all accounting entries, average-cost COGS, stock movements, and reports.
 
+[![Solution architecture](assets/architecture.png)](assets/architecture.png)
+
 ## Architecture
 
 The system separates conversational channel handling from deterministic accounting logic:
@@ -40,6 +42,35 @@ FastAPI Backend (Clean Architecture)
 - `05_monthly_profit_loss_report.json` — Monthly simplified profit & loss report on the 1st of every month at `08:00 WIB`.
 - `06_menu_navigation.json` — Stateless hybrid inline menu navigation (`menu:*` callbacks and `GET /products` by category).
 - `07_weekly_slow_moving_promo.json` — Weekly slow-moving promo recommendations and bundling captions every Monday at `09:00 WIB` via `POST /promo/slow-moving`.
+
+`01` is the single Telegram entry point: owner allowlist, button callbacks routed to sub-workflows, photo download and base64 conversion for OCR, `POST /messages`, and a reply with or without the confirmation keyboard.
+
+[![n8n workflow 01: incoming Telegram message](assets/n8n_incoming_message.png)](assets/n8n_incoming_message.png)
+
+`02` handles the **Benar** / **Salah** callbacks: allowlist check again, then confirm or reject through the API, send the result, and remove the old buttons.
+
+[![n8n workflow 02: transaction confirmation](assets/n8n_transaction_confirmation.png)](assets/n8n_transaction_confirmation.png)
+
+### Monitoring
+FastAPI exposes `/metrics` for Prometheus, and the provisioned Grafana dashboard (`monitoring/grafana/dashboards/tackle_shop_overview.json`) tracks processed messages, LLM calls, parse failures and fallbacks, transactions by status, intents, per-operation LLM latency, token usage, and API traffic. Grafana stays on `127.0.0.1` and is reached over the SSH tunnel.
+
+[![Grafana monitoring dashboard](assets/grafana_monitoring.png)](assets/grafana_monitoring.png)
+
+## Telegram Bot
+
+The owner only talks to the bot. Every reply below comes from the deployed stack (n8n on a GCP VM calling FastAPI), using the shop's seed products.
+
+**Menu and examples:** `/start` or `/menu` shows the rules (one transaction type per chat), example messages per product category, and inline menu buttons.
+
+[![Start menu](assets/telegram_start_menu.png)](assets/telegram_start_menu.png)
+
+**Recording transactions:** a free-form sale message is extracted into line items, priced from the product table, and held as `pending`. Stock and journal entries change only after the owner taps **Benar**; **Salah** cancels the draft.
+
+[![Sale confirmation and stock update](assets/telegram_transactions.png)](assets/telegram_transactions.png)
+
+**Questions, guardrails, and reports:** stock and best-seller questions go to the read-only agent (tool calls only, numbers come from SQL). A message mixing a sale and a purchase is rejected by a template without calling the LLM. The report menu returns the monthly simplified profit and loss.
+
+[![Agent answers, mixed-message guard, and profit and loss report](assets/telegram_agent_reports.png)](assets/telegram_agent_reports.png)
 
 ## Design Decisions
 
