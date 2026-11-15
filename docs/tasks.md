@@ -69,9 +69,9 @@ Selesai kalau ketiga laporan bisa dipicu manual dari n8n dan isinya cocok dengan
 `GET /metrics`, service Prometheus dan Grafana di Docker Compose, dan satu dashboard sesuai spec bagian 13.
 Selesai kalau dashboard menampilkan data setelah beberapa pesan dikirim.
 
-## Task 13: Foto nota `[ ]`
+## Task 13: Foto nota `[x]`
 Provider OCR lewat `OCR_PROVIDER`: PaddleOCR-VL (lokal) dan Qwen vision di Groq.
-Selesai kalau foto nota asli menghasilkan transaksi `pending` lewat ekstraktor yang sama, dan hasil tes nota asli masuk ke dataset eval.
+Selesai kalau foto nota menghasilkan transaksi `pending` lewat ekstraktor yang sama, dan hasil tes nota masuk ke dataset eval (`evals/datasets/ocr_notes.jsonl` memakai 5 contoh nota tulis tangan sintetis; tes foto asli menyusul).
 
 ## Task 14: Deploy ke GCP `[x]`
 Satu VM Compute Engine menjalankan Docker Compose, plus README bahasa Inggris (arsitektur, cara jalan, keputusan desain, roadmap).

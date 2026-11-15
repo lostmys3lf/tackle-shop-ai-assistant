@@ -65,6 +65,7 @@ class LLMRequest:  # pylint: disable=too-many-instance-attributes
     metadata: dict[str, Any] = field(default_factory=dict)
     tools: list[dict[str, Any]] | None = None
     tool_choice: str | dict[str, Any] | None = None
+    model: str | None = None
 
 
 @dataclass
@@ -286,7 +287,10 @@ class LLMClient:
             ) from fallback_exc
 
     def generate_text(self, request: LLMRequest) -> str:
-        """Generate text completion with automatic fallback to secondary model."""
+        """Generate text completion with fallback, or target an explicit model."""
+        if request.model and request.model.strip():
+            # Model eksplisit (misal vision model) tidak fallback ke model teks biasa
+            return self._call_model_with_retry(request.model.strip(), request)
         return self._run_with_fallback(
             lambda model: self._call_model_with_retry(model, request)
         )

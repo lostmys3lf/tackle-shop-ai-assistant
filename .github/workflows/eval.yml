@@ -6,6 +6,7 @@ on:
     paths:
       - "prompts/**"
       - "app/infrastructure/llm/**"
+      - "app/infrastructure/ocr/**"
       - "evals/**"
 
 jobs:

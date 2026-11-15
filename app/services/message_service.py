@@ -32,6 +32,7 @@ from app.infrastructure.monitoring.metrics import (
     record_message_processed,
     record_transaction_event,
 )
+from app.infrastructure.ocr import BaseOCRProvider, OCRError, get_ocr_provider
 from app.services.agent_service import AgentService
 from app.services.formatting import format_rupiah
 
@@ -118,22 +119,97 @@ class MessageService:
         router: BaseMessageRouter | None = None,
         extractor: TransactionExtractor | None = None,
         agent_service: AgentService | None = None,
+        ocr_provider: BaseOCRProvider | None = None,
     ) -> None:
-        """Initialize message service with router, extractor, and agent."""
+        """Initialize message service with router, extractor, agent, and OCR."""
         self.router = router or get_message_router()
         self.extractor = extractor or TransactionExtractor()
         self.agent_service = agent_service or AgentService()
+        self.ocr_provider = ocr_provider
+
+    def _resolve_ocr_provider(self) -> BaseOCRProvider:
+        """Return injected OCR provider or lazily instantiate default from config."""
+        if self.ocr_provider is None:
+            self.ocr_provider = get_ocr_provider()
+        return self.ocr_provider
+
+    def _prepare_photo_text(self, caption: str, image_base64: str) -> str:
+        """Transcribe receipt photo and combine with optional owner caption."""
+        ocr_result = self._resolve_ocr_provider().extract_text(image_base64)
+        if caption:
+            return (
+                f"Catatan pemilik: {caption}\n\nIsi nota dari foto:\n{ocr_result.text}"
+            )
+        return ocr_result.text
+
+    def _handle_photo_message(
+        self,
+        clean_text: str,
+        clean_image: str,
+        session: Any,
+    ) -> tuple[MessageIntent, Decimal, str, int | None]:
+        """Run receipt OCR and extract transaction draft from a photo message."""
+        try:
+            extracted_input = self._prepare_photo_text(clean_text, clean_image)
+        except OCRError as exc:
+            return MessageIntent.OTHER, Decimal("1.0000"), str(exc), None
+
+        reply, pending_tx_id = self._process_transaction_intent(
+            clean_text=extracted_input,
+            session=session,
+            source=TransactionSource.PHOTO,
+        )
+        if pending_tx_id is None:
+            intent = MessageIntent.OTHER
+        elif reply.startswith("Konfirmasi PEMBELIAN:"):
+            intent = MessageIntent.PURCHASE
+        else:
+            intent = MessageIntent.SALE
+        return intent, Decimal("1.0000"), reply, pending_tx_id
+
+    def _handle_text_message(
+        self,
+        clean_text: str,
+        session: Any,
+    ) -> tuple[MessageIntent, Decimal, str, int | None]:
+        """Route and process a plain-text owner message."""
+        routing = self.router.route(clean_text)
+        intent = routing.intent
+        confidence = Decimal(str(round(routing.confidence, 4)))
+
+        if intent == MessageIntent.QUESTION:
+            return (
+                intent,
+                confidence,
+                self.agent_service.answer_question(clean_text, session=session),
+                None,
+            )
+        if intent == MessageIntent.OTHER:
+            reply = (
+                "Halo! Saya bot pencatatan Toko Pancing Bapak. "
+                "Saya membantu mencatat penjualan, pembelian stok, dan laporan toko.\n"
+                "Ketik /start untuk melihat contoh chat yang bisa dicoba."
+            )
+            return intent, confidence, reply, None
+
+        reply, pending_tx_id = self._process_transaction_intent(
+            clean_text=clean_text,
+            session=session,
+            source=TransactionSource.CHAT,
+        )
+        return intent, confidence, reply, pending_tx_id
 
     def process_message(
         self,
         channel: str,
         chat_id: str,
         text: str | None,
-        image_base64: str | None = None,  # pylint: disable=unused-argument
+        image_base64: str | None = None,
     ) -> dict[str, Any]:
-        """Process incoming chat message and return response payload."""
+        """Process incoming chat or photo receipt message and return response payload."""
         clean_text = (text or "").strip()
-        if not clean_text:
+        clean_image = (image_base64 or "").strip()
+        if not clean_text and not clean_image:
             return {
                 "intent": MessageIntent.OTHER.value,
                 "reply_text": "Pesan kosong. Silakan ketik transaksi atau pertanyaan Anda.",
@@ -143,16 +219,14 @@ class MessageService:
 
         with get_session() as session:
             msg_repo = MessageRepository(session)
-
-            # 1. Simpan pesan masuk
             msg = msg_repo.create_message(
                 channel=channel,
                 chat_id=chat_id,
-                text=clean_text,
+                text=clean_text or "[FOTO NOTA]",
             )
 
             # Tangani /start, /help, dan /menu sebagai panduan awal tanpa panggil LLM
-            if _is_welcome_command(clean_text):
+            if not clean_image and _is_welcome_command(clean_text):
                 msg_repo.update_reply(
                     msg.id,
                     WELCOME_MESSAGE,
@@ -167,23 +241,14 @@ class MessageService:
                     "show_main_menu": True,
                 }
 
-            # 2. Routing jenis pesan
-            routing = self.router.route(clean_text)
-            intent = routing.intent
-            confidence = Decimal(str(round(routing.confidence, 4)))
-            pending_tx_id: int | None = None
-
-            # 3. Handle pertanyaan, percakapan umum, atau transaksi
-            if intent == MessageIntent.QUESTION:
-                reply = self.agent_service.answer_question(clean_text, session=session)
-            elif intent == MessageIntent.OTHER:
-                reply = (
-                    "Halo! Saya bot pencatatan Toko Pancing Bapak. "
-                    "Saya membantu mencatat penjualan, pembelian stok, dan laporan toko.\n"
-                    "Ketik /start untuk melihat contoh chat yang bisa dicoba."
+            if clean_image:
+                intent, confidence, reply, pending_tx_id = self._handle_photo_message(
+                    clean_text=clean_text,
+                    clean_image=clean_image,
+                    session=session,
                 )
             else:
-                reply, pending_tx_id = self._process_transaction_intent(
+                intent, confidence, reply, pending_tx_id = self._handle_text_message(
                     clean_text=clean_text,
                     session=session,
                 )
@@ -201,6 +266,7 @@ class MessageService:
         self,
         clean_text: str,
         session: Any,
+        source: TransactionSource = TransactionSource.CHAT,
     ) -> tuple[str, int | None]:
         """Extract transaction items, validate stock/prices, and create pending draft."""
         prod_repo = ProductRepository(session)
@@ -276,7 +342,7 @@ class MessageService:
         # Buat transaksi berstatus pending
         tx = tx_repo.create_pending_transaction(
             tx_type=tx_type.value,
-            source=TransactionSource.CHAT.value,
+            source=source.value,
             raw_text=clean_text,
             items=items_payload,
         )

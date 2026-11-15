@@ -37,6 +37,10 @@ class Settings:  # pylint: disable=too-many-instance-attributes
     cloudflare_account_id: str = os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
     cloudflare_api_token: str = os.getenv("CLOUDFLARE_API_TOKEN", "")
 
+    # OCR settings
+    ocr_provider: str = os.getenv("OCR_PROVIDER", "groq_vision").lower()
+    ocr_vision_model: str = os.getenv("OCR_VISION_MODEL", "qwen/qwen3.8-27b")
+
     # Security settings
     api_secret: str = os.getenv("API_SECRET", "")
 

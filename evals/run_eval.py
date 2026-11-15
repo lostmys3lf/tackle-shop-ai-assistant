@@ -1,5 +1,6 @@
 """Evaluation runner for LLM transaction extraction and intent routing."""
 
+import base64
 import csv
 import json
 import os
@@ -29,6 +30,10 @@ from app.infrastructure.llm.extractor import (  # pylint: disable=wrong-import-p
 )
 from app.infrastructure.llm.router import (  # pylint: disable=wrong-import-position
     LLMMessageRouter,
+)
+from app.infrastructure.ocr import (  # pylint: disable=wrong-import-position
+    BaseOCRProvider,
+    get_ocr_provider,
 )
 from app.services.agent_service import (  # pylint: disable=wrong-import-position
     AgentService,
@@ -441,6 +446,7 @@ def print_score_table(
     scores: dict[str, FieldScore],
     router_score: FieldScore,
     agent_scores: dict[str, FieldScore] | None = None,
+    ocr_scores: dict[str, FieldScore] | None = None,
 ) -> float:
     """Print markdown/table format of evaluation scores and return average accuracy."""
     print("\n" + "=" * 60)
@@ -469,6 +475,14 @@ def print_score_table(
             total_correct += score.correct
             total_items += score.total
 
+    if ocr_scores:
+        for name, score in ocr_scores.items():
+            print(
+                f"{name:<25} | {score.correct:<8} | {score.total:<8} | {score.accuracy * 100:.1f}%"
+            )
+            total_correct += score.correct
+            total_items += score.total
+
     overall_acc = total_correct / total_items if total_items > 0 else 0.0
     print("-" * 60)
     print(
@@ -476,6 +490,84 @@ def print_score_table(
     )
     print("=" * 60)
     return overall_acc
+
+
+def evaluate_ocr_notes(
+    ocr_provider: BaseOCRProvider,
+    extractor: TransactionExtractor,
+    products: list[DomainProduct],
+    limit: int | None = None,
+) -> tuple[dict[str, FieldScore], list[dict[str, Any]]]:
+    """Evaluate receipt image OCR followed by transaction extraction."""
+    dataset_path = BASE_DIR / "evals" / "datasets" / "ocr_notes.jsonl"
+    raw_scores = {
+        "type": FieldScore(),
+        "item_count": FieldScore(),
+        "product_id": FieldScore(),
+        "qty": FieldScore(),
+        "unit_price": FieldScore(),
+    }
+    read_score = FieldScore()
+    details: list[dict[str, Any]] = []
+
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    if limit:
+        lines = lines[:limit]
+
+    print(f"\n--- Mengevaluasi Foto Nota OCR ({len(lines)} contoh) ---")
+    for line in lines:
+        sample = json.loads(line)
+        image_file = BASE_DIR / sample["image_path"]
+        caption = (sample.get("caption") or "").strip()
+        read_score.total += 1
+
+        try:
+            image_b64 = base64.b64encode(image_file.read_bytes()).decode("ascii")
+            ocr_result = ocr_provider.extract_text(image_b64)
+            read_score.correct += 1
+            time.sleep(DELAY_BETWEEN_CALLS)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            raw_scores["type"].total += 1
+            raw_scores["item_count"].total += 1
+            details.append(
+                {
+                    "id": sample["id"],
+                    "image_path": sample["image_path"],
+                    "ocr_text": "",
+                    "passed": False,
+                    "error": str(exc),
+                }
+            )
+            print(f"[FAIL] {sample['id']}: OCR gagal ({exc})")
+            time.sleep(DELAY_BETWEEN_CALLS)
+            continue
+
+        combined_text = (
+            f"Catatan pemilik: {caption}\n\nIsi nota dari foto:\n{ocr_result.text}"
+            if caption
+            else ocr_result.text
+        )
+        tx_sample = {
+            "id": sample["id"],
+            "text": combined_text,
+            "expected": sample["expected"],
+        }
+        detail = _evaluate_single_transaction(
+            extractor, tx_sample, products, raw_scores
+        )
+        detail["image_path"] = sample["image_path"]
+        detail["ocr_text"] = ocr_result.text
+        details.append(detail)
+        status = "OK" if detail["passed"] else "FAIL"
+        print(f"[{status}] {sample['id']}: {sample['image_path']}")
+        time.sleep(DELAY_BETWEEN_CALLS)
+
+    prefixed = {"ocr_read": read_score}
+    for key, val in raw_scores.items():
+        prefixed[f"ocr_{key}"] = val
+    return prefixed, details
 
 
 def main() -> None:
@@ -488,14 +580,20 @@ def main() -> None:
     products = load_seed_products()
     router = LLMMessageRouter()
     extractor = TransactionExtractor()
+    ocr_provider = get_ocr_provider()
 
     start_time = time.time()
 
     router_score, router_details = evaluate_router(router, limit=limit)
     tx_scores, tx_details = evaluate_transactions(extractor, products, limit=limit)
     agent_scores, agent_details = evaluate_agent(products, limit=limit)
+    ocr_scores, ocr_details = evaluate_ocr_notes(
+        ocr_provider, extractor, products, limit=limit
+    )
 
-    overall_accuracy = print_score_table(tx_scores, router_score, agent_scores)
+    overall_accuracy = print_score_table(
+        tx_scores, router_score, agent_scores, ocr_scores
+    )
     duration = time.time() - start_time
     print(f"Evaluasi selesai dalam {duration:.1f} detik.")
 
@@ -506,9 +604,11 @@ def main() -> None:
         "router_accuracy": router_score.accuracy,
         "transaction_field_accuracies": {k: v.accuracy for k, v in tx_scores.items()},
         "agent_field_accuracies": {k: v.accuracy for k, v in agent_scores.items()},
+        "ocr_field_accuracies": {k: v.accuracy for k, v in ocr_scores.items()},
         "router_details": router_details,
         "transactions_details": tx_details,
         "agent_details": agent_details,
+        "ocr_details": ocr_details,
     }
 
     report_path = BASE_DIR / "evals" / "eval_report.json"

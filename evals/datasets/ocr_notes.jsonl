@@ -1,0 +1,5 @@
+{"id": "ocr_01", "image_path": "evals/datasets/notes/note_01.png", "caption": "", "expected": {"type": "sale", "items": [{"product_id": 5, "qty": 3, "unit_price": 3000}, {"product_id": 3, "qty": 2, "unit_price": 5000}]}}
+{"id": "ocr_02", "image_path": "evals/datasets/notes/note_02.png", "caption": "", "expected": {"type": "sale", "items": [{"product_id": 1, "qty": 1, "unit_price": 35000}, {"product_id": 4, "qty": 2, "unit_price": 7000}]}}
+{"id": "ocr_03", "image_path": "evals/datasets/notes/note_03.png", "caption": "", "expected": {"type": "purchase", "items": [{"product_id": 2, "qty": 4, "unit_price": 29000}, {"product_id": 5, "qty": 10, "unit_price": 2500}]}}
+{"id": "ocr_04", "image_path": "evals/datasets/notes/note_04.png", "caption": "", "expected": {"type": "sale", "items": [{"product_id": 2, "qty": 2, "unit_price": null}, {"product_id": 3, "qty": 5, "unit_price": null}]}}
+{"id": "ocr_05", "image_path": "evals/datasets/notes/note_05.png", "caption": "", "expected": {"type": "purchase", "items": [{"product_id": 3, "qty": 10, "unit_price": 4100}, {"product_id": 4, "qty": 5, "unit_price": 5800}]}}

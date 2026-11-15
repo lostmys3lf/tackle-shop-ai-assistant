@@ -1,6 +1,6 @@
 {
-  "timestamp": 1794569372.3863232,
-  "overall_accuracy": 0.9915254237288136,
+  "timestamp": 1794712702.1778092,
+  "overall_accuracy": 0.9928825622775801,
   "threshold": 0.85,
   "router_accuracy": 1.0,
   "transaction_field_accuracies": {
@@ -13,6 +13,14 @@
   "agent_field_accuracies": {
     "agent_tool": 1.0,
     "agent_values": 1.0
+  },
+  "ocr_field_accuracies": {
+    "ocr_read": 1.0,
+    "ocr_type": 1.0,
+    "ocr_item_count": 1.0,
+    "ocr_product_id": 1.0,
+    "ocr_qty": 1.0,
+    "ocr_unit_price": 1.0
   },
   "router_details": [
     {
@@ -1206,7 +1214,7 @@
       "expected_values": [
         "20"
       ],
-      "answer": "Stok **Pelet Jitu** saat ini masih **20 bungkus** (di atas stok minimal 5). Jadi masih cukup tersedia."
+      "answer": "Stok **Pelet Jitu** saat ini masih **20 bungkus** (di atas batas minimal 5). Jadi masih cukup tersedia."
     },
     {
       "id": "ag_02",
@@ -1220,7 +1228,7 @@
         "Pelet Jitu",
         "Senar Litecate"
       ],
-      "answer": "Berikut stok barang di toko saat ini:\n\n1. **Senar Litecate N Nylon 150\u202fm** \u2013 10\u202fgulung, harga jual Rp35.000\n2. **Senar Shino Sharp Line 100\u202fm** \u2013 10\u202fgulung, harga jual Rp35.000\n3. **Umpan Pak Ikin** \u2013 20\u202fbungkus, harga jual Rp5.000\n4. **Umpan Tepung Bogor** \u2013 20\u202fbungkus, harga jual Rp7.000\n5. **Pelet Jitu** \u2013 20\u202fbungkus, harga jual Rp3.000\n\nSemua barang di atas masih di atas stok minimal masing\u2011masing, jadi belum masuk kategori \u201cstok rendah\u201d. Jika Anda butuh detail lebih lanjut atau ingin mengecek barang lain, silakan beri tahu!"
+      "answer": "Berikut daftar stok barang di toko saat ini:\n\n1. **Senar Litecate N Nylon 150\u202fm** \u2013 10\u202fgulung \u2013 Harga jual: Rp35.000  \n2. **Senar Shino Sharp Line 100\u202fm** \u2013 10\u202fgulung \u2013 Harga jual: Rp35.000  \n3. **Umpan Pak Ikin** \u2013 20\u202fbungkus \u2013 Harga jual: Rp5.000  \n4. **Umpan Tepung Bogor** \u2013 20\u202fbungkus \u2013 Harga jual: Rp7.000  \n5. **Pelet Jitu** \u2013 20\u202fbungkus \u2013 Harga jual: Rp3.000  \n\nSemua barang masih di atas stok minimal masing\u2011masing, jadi belum ada yang masuk kategori \u201cstok rendah\u201d. Jika Anda butuh detail lebih lanjut atau ingin mengecek barang tertentu, silakan beri tahu saya!"
     },
     {
       "id": "ag_03",
@@ -1233,7 +1241,7 @@
       "expected_values": [
         "41.000"
       ],
-      "answer": "Penjualan hari ini total **Rp41.000**."
+      "answer": "Penjualan hari ini (13\u202fNov\u202f2026) total **Rp41.000**, dengan **2 transaksi** dan **3 barang** terjual."
     },
     {
       "id": "ag_04",
@@ -1247,7 +1255,7 @@
         "145.000",
         "6"
       ],
-      "answer": "Penjualan minggu ini (09\u202fNov\u202f\u2013\u202f13\u202fNov) menghasilkan **Rp145.000** dengan **6 transaksi**."
+      "answer": "Penjualan minggu ini menghasilkan **Rp145.000** dengan **6 transaksi**."
     },
     {
       "id": "ag_05",
@@ -1261,7 +1269,7 @@
         "Pelet Jitu",
         "12"
       ],
-      "answer": "Barang paling laris bulan ini adalah **Pelet Jitu** dengan penjualan sebanyak **12\u202fbungkus**, menghasilkan omzet **Rp36.000**."
+      "answer": "Barang paling laris bulan ini adalah **Pelet Jitu** (12\u202fbungkus terjual, total omzet Rp36.000)."
     },
     {
       "id": "ag_06",
@@ -1276,7 +1284,7 @@
         "Umpan Pak Ikin",
         "Senar Litecate"
       ],
-      "answer": "Berikut 3 barang terlaris bulan\u202fNovember\u202f2026:\n\n1. **Pelet Jitu** \u2013 12\u202fbungkus \u2192 omzet **Rp36.000**  \n2. **Umpan Pak Ikin** \u2013 8\u202fbungkus \u2192 omzet **Rp40.000**  \n3. **Senar Litecate N Nylon 150\u202fm** \u2013 2\u202fgulung \u2192 omzet **Rp70.000**  \n\nItulah produk dengan penjualan terbanyak hingga 13\u202fNovember\u202f2026."
+      "answer": "Berikut 3 barang terlaris bulan ini (1\u202f\u2013\u202f13\u202fNov\u202f2026):\n\n1. **Pelet Jitu** \u2013 12\u202fbungkus \u2192 omzet **Rp36.000**  \n2. **Umpan Pak Ikin** \u2013 8\u202fbungkus \u2192 omzet **Rp40.000**  \n3. **Senar Litecate N Nylon 150\u202fm** \u2013 2\u202fgulung \u2192 omzet **Rp70.000**  \n\nItulah produk dengan penjualan terbanyak selama bulan ini."
     },
     {
       "id": "ag_07",
@@ -1290,7 +1298,7 @@
         "145.000",
         "24.200"
       ],
-      "answer": "Berikut ringkasan laba\u2011rugi **bulan November\u202f2026**:\n\n- **Omzet penjualan:** Rp145.000  \n- **Harga Pokok Penjualan (HPP):** Rp120.800  \n- **Laba kotor:** Rp24.200  \n\nItulah hasil penjualan bersih setelah dikurangi biaya barang untuk bulan ini. Jika ada pertanyaan lain (misalnya detail per produk atau stok), silakan beri tahu!"
+      "answer": "Berikut ringkasan laba\u2011rugi **bulan November\u202f2026**:\n\n- **Omzet penjualan:** Rp145.000  \n- **Harga Pokok Penjualan (HPP):** Rp120.800  \n- **Laba kotor:** Rp24.200  \n\nSemoga membantu! Jika ada yang ingin dicek lebih detail, silakan beri tahu."
     },
     {
       "id": "ag_08",
@@ -1306,6 +1314,203 @@
         "24.200"
       ],
       "answer": "Omzet bulan\u202fNovember\u202f2026: **Rp145.000**  \nHPP (Harga Pokok Penjualan): **Rp120.800**  \nLaba kotor: **Rp24.200**"
+    }
+  ],
+  "ocr_details": [
+    {
+      "id": "ocr_01",
+      "text": "NOTA PENJUALAN - Toko Pancing\nTgl: 15 Nov 2026 (Tunai)\n1. Pelet Jitu 3 bungkus @ Rp 3.000 = Rp 9.000\n2. Umpan Pak Ikin 2 bungkus @ Rp 5.000 = Rp 10.000\nTotal Bayar: Rp 19.000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "qty": 3,
+            "unit_price": 3000
+          },
+          {
+            "product_id": 3,
+            "qty": 2,
+            "unit_price": 5000
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 5,
+            "product_name_raw": "Pelet Jitu",
+            "qty": 3,
+            "unit_price": "3000"
+          },
+          {
+            "product_id": 3,
+            "product_name_raw": "Umpan Pak Ikin",
+            "qty": 2,
+            "unit_price": "5000"
+          }
+        ]
+      },
+      "image_path": "evals/datasets/notes/note_01.png",
+      "ocr_text": "NOTA PENJUALAN - Toko Pancing\nTgl: 15 Nov 2026 (Tunai)\n1. Pelet Jitu 3 bungkus @ Rp 3.000 = Rp 9.000\n2. Umpan Pak Ikin 2 bungkus @ Rp 5.000 = Rp 10.000\nTotal Bayar: Rp 19.000"
+    },
+    {
+      "id": "ocr_02",
+      "text": "Penjualan Tunai\nLaku hari ini:\n- Senar Litecate 1 gulung Rp 35.000\n- Umpan Tepung Bogor 2 bks @ Rp 7.000 = 14.000\nJumlah = Rp 49.000",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "qty": 1,
+            "unit_price": 35000
+          },
+          {
+            "product_id": 4,
+            "qty": 2,
+            "unit_price": 7000
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 1,
+            "product_name_raw": "Senar Litecate",
+            "qty": 1,
+            "unit_price": "35000"
+          },
+          {
+            "product_id": 4,
+            "product_name_raw": "Umpan Tepung Bogor",
+            "qty": 2,
+            "unit_price": "7000"
+          }
+        ]
+      },
+      "image_path": "evals/datasets/notes/note_02.png",
+      "ocr_text": "Penjualan Tunai\nLaku hari ini:\n- Senar Litecate 1 gulung Rp 35.000\n- Umpan Tepung Bogor 2 bks @ Rp 7.000 = 14.000\nJumlah = Rp 49.000"
+    },
+    {
+      "id": "ocr_03",
+      "text": "FAKTUR PEMBELIAN SUPPLIER\nKulakan dari Agen Maju:\n- Senar Shino 4 gulung @ Rp 29.000 = Rp 116.000\n- Pelet Jitu 10 bungkus @ Rp 2.500 = Rp 25.000\nTotal Kulakan: Rp 141.000",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 2,
+            "qty": 4,
+            "unit_price": 29000
+          },
+          {
+            "product_id": 5,
+            "qty": 10,
+            "unit_price": 2500
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "Senar Shino",
+            "qty": 4,
+            "unit_price": "29000"
+          },
+          {
+            "product_id": 5,
+            "product_name_raw": "Pelet Jitu",
+            "qty": 10,
+            "unit_price": "2500"
+          }
+        ]
+      },
+      "image_path": "evals/datasets/notes/note_03.png",
+      "ocr_text": "FAKTUR PEMBELIAN SUPPLIER\nKulakan dari Agen Maju:\n- Senar Shino 4 gulung @ Rp 29.000 = Rp 116.000\n- Pelet Jitu 10 bungkus @ Rp 2.500 = Rp 25.000\nTotal Kulakan: Rp 141.000"
+    },
+    {
+      "id": "ocr_04",
+      "text": "Catatan Lalu Siang\nBarang terjual:\n- Senar Shino Sharp Line 2 gulung\n- Umpan Pak Ikin 5 bks\n(Harga sesuai daftar toko)",
+      "passed": true,
+      "expected": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "qty": 2,
+            "unit_price": null
+          },
+          {
+            "product_id": 3,
+            "qty": 5,
+            "unit_price": null
+          }
+        ]
+      },
+      "actual": {
+        "type": "sale",
+        "items": [
+          {
+            "product_id": 2,
+            "product_name_raw": "Senar Shino Sharp Line",
+            "qty": 2,
+            "unit_price": null
+          },
+          {
+            "product_id": 3,
+            "product_name_raw": "Umpan Pak Ikin",
+            "qty": 5,
+            "unit_price": null
+          }
+        ]
+      },
+      "image_path": "evals/datasets/notes/note_04.png",
+      "ocr_text": "Catatan Lalu Siang\nBarang terjual:\n- Senar Shino Sharp Line 2 gulung\n- Umpan Pak Ikin 5 bks\n(Harga sesuai daftar toko)"
+    },
+    {
+      "id": "ocr_05",
+      "text": "Nota Kulakan Barang Masuk\nBeli stok umpan:\n1) Umpan Pak Ikin 10 bungkus harga @ 4.100\n2) Umpan Tepung Bogor 5 bungkus harga @ 5.800\nLunas tunai",
+      "passed": true,
+      "expected": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "qty": 10,
+            "unit_price": 4100
+          },
+          {
+            "product_id": 4,
+            "qty": 5,
+            "unit_price": 5800
+          }
+        ]
+      },
+      "actual": {
+        "type": "purchase",
+        "items": [
+          {
+            "product_id": 3,
+            "product_name_raw": "Umpan Pak Ikin",
+            "qty": 10,
+            "unit_price": "4100"
+          },
+          {
+            "product_id": 4,
+            "product_name_raw": "Umpan Tepung Bogor",
+            "qty": 5,
+            "unit_price": "5800"
+          }
+        ]
+      },
+      "image_path": "evals/datasets/notes/note_05.png",
+      "ocr_text": "Nota Kulakan Barang Masuk\nBeli stok umpan:\n1) Umpan Pak Ikin 10 bungkus harga @ 4.100\n2) Umpan Tepung Bogor 5 bungkus harga @ 5.800\nLunas tunai"
     }
   ]
 }

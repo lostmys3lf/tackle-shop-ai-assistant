@@ -769,6 +769,131 @@
         "maxTries": 5,
         "waitBetweenTries": 1500,
         "webhookId": "ed21f320-5bae-46ab-83fe-50a72f77c139"
+      },
+      {
+        "id": "f10a0001-photo-check-4e11-9000-000000000001",
+        "name": "Pesan Foto?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          760,
+          416
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "has-telegram-photo",
+                "leftValue": "={{ Array.isArray($('Telegram Trigger').item.json.message?.photo) && $('Telegram Trigger').item.json.message.photo.length > 0 ? \"photo\" : \"text\" }}",
+                "rightValue": "photo",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "f10a0002-photo-get-4e11-9000-000000000002",
+        "name": "Unduh Foto Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          976,
+          256
+        ],
+        "parameters": {
+          "resource": "file",
+          "operation": "get",
+          "fileId": "={{ ($('Telegram Trigger').item.json.message?.photo ?? []).slice(-1)[0]?.file_id ?? \"\" }}",
+          "download": true,
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        }
+      },
+      {
+        "id": "f10a0003-photo-b64-4e11-9000-000000000003",
+        "name": "Konversi Foto ke Base64",
+        "type": "n8n-nodes-base.extractFromFile",
+        "typeVersion": 1.1,
+        "position": [
+          1184,
+          256
+        ],
+        "parameters": {
+          "operation": "binaryToPropery",
+          "binaryPropertyName": "data",
+          "destinationKey": "data",
+          "options": {}
+        }
+      },
+      {
+        "id": "f10a0004-photo-api-4e11-9000-000000000004",
+        "name": "Panggil POST /messages (Foto)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          1392,
+          256
+        ],
+        "parameters": {
+          "authentication": "genericCredentialType",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "channel",
+                "value": "telegram"
+              },
+              {
+                "name": "chat_id",
+                "value": "={{ String($('Telegram Trigger').item.json.message?.chat?.id ?? \"\") }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ String($('Telegram Trigger').item.json.message?.caption ?? $('Telegram Trigger').item.json.message?.text ?? \"\") }}"
+              },
+              {
+                "name": "image_base64",
+                "value": "={{ String($json.data ?? \"\") }}"
+              }
+            ]
+          },
+          "contentType": "json",
+          "genericAuthType": "httpHeaderAuth",
+          "method": "POST",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          },
+          "sendBody": true,
+          "specifyBody": "keypair",
+          "url": "http://api:8000/messages"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        }
       }
     ],
     "connections": {
@@ -845,7 +970,7 @@
         "main": [
           [
             {
-              "node": "Panggil POST /messages",
+              "node": "Pesan Foto?",
               "type": "main",
               "index": 0
             }
@@ -990,6 +1115,57 @@
           [
             {
               "node": "Kirim Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pesan Foto?": {
+        "main": [
+          [
+            {
+              "node": "Unduh Foto Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Panggil POST /messages",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Unduh Foto Telegram": {
+        "main": [
+          [
+            {
+              "node": "Konversi Foto ke Base64",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Konversi Foto ke Base64": {
+        "main": [
+          [
+            {
+              "node": "Panggil POST /messages (Foto)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Panggil POST /messages (Foto)": {
+        "main": [
+          [
+            {
+              "node": "Normalisasi Balasan API",
               "type": "main",
               "index": 0
             }
