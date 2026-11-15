@@ -53,9 +53,12 @@ class ProductRepository:
         """Initialize repository with database session."""
         self.session = session
 
-    def get_all(self) -> list[DomainProduct]:
-        """Retrieve all registered products."""
-        stmt = select(Product).order_by(Product.id)
+    def get_all(self, category: str | None = None) -> list[DomainProduct]:
+        """Retrieve all registered products, optionally filtered by category."""
+        stmt = select(Product)
+        if category is not None:
+            stmt = stmt.where(Product.category == category)
+        stmt = stmt.order_by(Product.id)
         rows = self.session.scalars(stmt).all()
         return [_to_domain_product(row) for row in rows]
 

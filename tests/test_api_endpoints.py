@@ -88,10 +88,11 @@ def test_post_messages_intent_other():
             assert data["intent"] == "other"
             assert "bot pencatatan Toko Pancing Bapak" in data["reply_text"]
             assert data["pending_transaction_id"] is None
+            assert data["show_main_menu"] is False
 
 
-def test_post_messages_start_command_returns_welcome_without_llm():
-    """Verify /start returns welcome guide without invoking LLM router."""
+def test_post_messages_start_and_menu_commands_return_welcome_without_llm():
+    """Verify /start and /menu return welcome guide and main menu flag without LLM."""
     with patch("app.services.message_service.get_session") as mock_session_ctx:
         mock_session = mock_session_ctx.return_value.__enter__.return_value
         mock_session.add.return_value = None
@@ -99,30 +100,36 @@ def test_post_messages_start_command_returns_welcome_without_llm():
         with patch(
             "app.services.message_service.get_message_router"
         ) as mock_router_getter:
-            res = client.post(
-                "/messages",
-                headers=AUTH_HEADERS,
-                json={
-                    "channel": "telegram",
-                    "chat_id": "user123",
-                    "text": "/start",
-                },
-            )
+            for command_text in ("/start", "/menu"):
+                res = client.post(
+                    "/messages",
+                    headers=AUTH_HEADERS,
+                    json={
+                        "channel": "telegram",
+                        "chat_id": "user123",
+                        "text": command_text,
+                    },
+                )
 
-            mock_router_getter.return_value.route.assert_not_called()
-            assert res.status_code == 200
-            data = res.json()
-            assert data["intent"] == "other"
-            assert "Selamat datang di Asisten Toko Pancing Bapak" in data["reply_text"]
-            assert "Satu chat hanya untuk satu jenis transaksi" in data["reply_text"]
-            assert "Peralatan (" in data["reply_text"]
-            assert "Bahan Umpan (" in data["reply_text"]
-            assert "Cek Stok & Laporan:" in data["reply_text"]
-            assert "1. Peralatan" not in data["reply_text"]
-            assert "2. Bahan Umpan" not in data["reply_text"]
-            assert "3. Cek Stok" not in data["reply_text"]
-            assert "laku pelet jitu 2 bungkus" in data["reply_text"]
-            assert data["pending_transaction_id"] is None
+                mock_router_getter.return_value.route.assert_not_called()
+                assert res.status_code == 200
+                data = res.json()
+                assert data["intent"] == "other"
+                assert (
+                    "Selamat datang di Asisten Toko Pancing Bapak" in data["reply_text"]
+                )
+                assert (
+                    "Satu chat hanya untuk satu jenis transaksi" in data["reply_text"]
+                )
+                assert "Peralatan (" in data["reply_text"]
+                assert "Bahan Umpan (" in data["reply_text"]
+                assert "Cek Stok & Laporan:" in data["reply_text"]
+                assert "1. Peralatan" not in data["reply_text"]
+                assert "2. Bahan Umpan" not in data["reply_text"]
+                assert "3. Cek Stok" not in data["reply_text"]
+                assert "laku pelet jitu 2 bungkus" in data["reply_text"]
+                assert data["pending_transaction_id"] is None
+                assert data["show_main_menu"] is True
 
 
 def test_format_currency_indonesian_no_decimals():
@@ -312,6 +319,7 @@ def test_post_messages_sale_creates_pending_transaction():
             data = res.json()
             assert data["intent"] == "sale"
             assert data["pending_transaction_id"] == 88
+            assert data["show_main_menu"] is False
             assert "Konfirmasi PENJUALAN:" in data["reply_text"]
             assert "Pelet Jitu: 2 bungkus x Rp3.000 = Rp6.000" in data["reply_text"]
             assert "Total: Rp6.000" in data["reply_text"]

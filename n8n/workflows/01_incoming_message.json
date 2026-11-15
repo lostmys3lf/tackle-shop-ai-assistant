@@ -1,10 +1,10 @@
 [
   {
-    "updatedAt": "2026-11-13T10:37:50.806Z",
+    "updatedAt": "2026-11-13T12:33:44.035Z",
     "createdAt": "2026-11-13T06:11:06.214Z",
     "id": "8BTnG1dgWGLOK0ZV",
     "name": "1 - Pesan Masuk Telegram",
-    "description": "Menerima update Telegram, mengecek allowlist pemilik, meneruskan pesan ke POST /messages atau callback ke sub-workflow konfirmasi.",
+    "description": "Menerima update Telegram, mengecek allowlist pemilik, meneruskan pesan ke POST /messages, atau mengarahkan callback menu berjenjang / konfirmasi transaksi ke sub-workflow.",
     "active": true,
     "isArchived": false,
     "nodes": [
@@ -102,8 +102,8 @@
         "type": "n8n-nodes-base.executeWorkflow",
         "typeVersion": 1.4,
         "position": [
-          832,
-          0
+          864,
+          96
         ],
         "parameters": {
           "source": "database",
@@ -198,6 +198,12 @@
                 "name": "loadingMessageId",
                 "type": "string",
                 "value": "={{ $('Kirim Pesan Memproses').item.json?.result?.message_id ? String($('Kirim Pesan Memproses').item.json.result.message_id) : \"\" }}"
+              },
+              {
+                "id": "show-main-menu",
+                "name": "showMainMenu",
+                "type": "boolean",
+                "value": "={{ Boolean($json.statusCode === 200 && $json.body?.show_main_menu) }}"
               }
             ]
           },
@@ -508,6 +514,261 @@
         "maxTries": 5,
         "waitBetweenTries": 1500,
         "webhookId": "683586df-72f6-4007-8fe6-44866bedcd2d"
+      },
+      {
+        "id": "e17eac84-c146-40fe-9e25-4a177fccc2fc",
+        "name": "Callback Menu?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          640,
+          -16
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "is-menu-callback",
+                "leftValue": "={{ String($json.callback_query?.data ?? \"\").startsWith(\"menu:\") ? \"menu\" : \"other\" }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "menu"
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "ef3670e6-f737-4864-bd0c-7e95faf81fdf",
+        "name": "Jalankan Menu Berjenjang",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.4,
+        "position": [
+          864,
+          -96
+        ],
+        "parameters": {
+          "source": "database",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "iP2uhGN5xAo9IFR7"
+          }
+        }
+      },
+      {
+        "id": "e146c854-2199-465e-8b42-2f027d4ffbce",
+        "name": "Tampilkan Menu Utama?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          1552,
+          608
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "should-show-main-menu",
+                "leftValue": "={{ $json.showMainMenu }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "boolean"
+                },
+                "rightValue": true
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "32692acf-8392-4397-b0ee-3ec1297b6164",
+        "name": "Ada Loading Menu?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          1792,
+          768
+        ],
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-loading-msg-menu",
+                "leftValue": "={{ $json.loadingMessageId ? \"yes\" : \"no\" }}",
+                "operator": {
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "yes"
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            }
+          }
+        }
+      },
+      {
+        "id": "7a311ac9-12dc-4869-924e-f3e43bf659ee",
+        "name": "Edit Menu Utama",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2032,
+          720
+        ],
+        "parameters": {
+          "additionalFields": {},
+          "chatId": "={{ String($json.chatId) }}",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:tx"
+                      },
+                      "text": "Catat Transaksi"
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:reports"
+                      },
+                      "text": "Lihat Laporan"
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:products"
+                      },
+                      "text": "Daftar Produk"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "messageId": "={{ String($json.loadingMessageId) }}",
+          "messageType": "message",
+          "operation": "editMessageText",
+          "replyMarkup": "inlineKeyboard",
+          "resource": "message",
+          "text": "={{ $json.replyText }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueErrorOutput",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500,
+        "webhookId": "4282a995-64f6-4134-b0fd-5a2de87c5002"
+      },
+      {
+        "id": "f38d3e70-172c-4bf2-86ea-1aff099b6f0b",
+        "name": "Kirim Menu Utama",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          2272,
+          832
+        ],
+        "parameters": {
+          "additionalFields": {
+            "appendAttribution": false
+          },
+          "chatId": "={{ String($json.chatId) }}",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:tx"
+                      },
+                      "text": "Catat Transaksi"
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:reports"
+                      },
+                      "text": "Lihat Laporan"
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "additionalFields": {
+                        "callback_data": "menu:products"
+                      },
+                      "text": "Daftar Produk"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "operation": "sendMessage",
+          "replyMarkup": "inlineKeyboard",
+          "resource": "message",
+          "text": "={{ $json.replyText }}"
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500,
+        "webhookId": "ed21f320-5bae-46ab-83fe-50a72f77c139"
       }
     ],
     "connections": {
@@ -544,7 +805,7 @@
         "main": [
           [
             {
-              "node": "Jalankan Konfirmasi Transaksi",
+              "node": "Callback Menu?",
               "type": "main",
               "index": 0
             }
@@ -602,7 +863,7 @@
           ],
           [
             {
-              "node": "Ada Loading Biasa?",
+              "node": "Tampilkan Menu Utama?",
               "type": "main",
               "index": 0
             }
@@ -668,6 +929,72 @@
             }
           ]
         ]
+      },
+      "Callback Menu?": {
+        "main": [
+          [
+            {
+              "node": "Jalankan Menu Berjenjang",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Jalankan Konfirmasi Transaksi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tampilkan Menu Utama?": {
+        "main": [
+          [
+            {
+              "node": "Ada Loading Menu?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ada Loading Biasa?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ada Loading Menu?": {
+        "main": [
+          [
+            {
+              "node": "Edit Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Kirim Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Menu Utama": {
+        "main": [
+          null,
+          [
+            {
+              "node": "Kirim Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
@@ -709,18 +1036,28 @@
           "ab23af39-0865-439f-bd96-0dac32e1cb31"
         ],
         "description": "Mengedit pesan loading atau mengirim balasan teks biasa"
+      },
+      {
+        "id": "4af9b363-c6fd-402b-bb52-6deedb14e6cf",
+        "name": "Balas Menu Utama",
+        "nodeIds": [
+          "32692acf-8392-4397-b0ee-3ec1297b6164",
+          "7a311ac9-12dc-4869-924e-f3e43bf659ee",
+          "f38d3e70-172c-4bf2-86ea-1aff099b6f0b"
+        ],
+        "description": "Mengedit pesan loading atau mengirim menu utama berjenjang Telegram"
       }
     ],
     "pinData": null,
-    "versionId": "8c5c82f9-8cb6-40fb-815c-dd908652c146",
-    "activeVersionId": "8c5c82f9-8cb6-40fb-815c-dd908652c146",
-    "versionCounter": 3,
+    "versionId": "41f6a16f-e7e3-40c5-82e3-f8166484f903",
+    "activeVersionId": "41f6a16f-e7e3-40c5-82e3-f8166484f903",
+    "versionCounter": 4,
     "triggerCount": 1,
     "sourceWorkflowId": null,
     "tags": [],
     "versionMetadata": {
-      "name": "Group processing & reply stages",
-      "description": "Organize processing and reply nodes into clean canvas groups"
+      "name": "Integrate hierarchical Telegram menu routing and main menu buttons",
+      "description": "Tambahkan routing callback menu:* ke sub-workflow 6 serta pengiriman menu utama berjenjang saat /start, /help, atau /menu."
     }
   }
 ]

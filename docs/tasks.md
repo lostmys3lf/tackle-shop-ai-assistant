@@ -85,6 +85,6 @@ Selesai kalau satu perubahan prompt yang lulus eval otomatis sampai ke VM tanpa 
 `POST /promo/slow-moving` dan workflow n8n mingguan.
 Selesai kalau caption dan saran bundling terkirim, dan semua angka di dalamnya berasal dari data.
 
-## Pengembangan UX lanjutan (setelah Task 11 selesai): Menu berjenjang Telegram `[ ]`
+## Pengembangan UX lanjutan (setelah Task 11 selesai): Menu berjenjang Telegram `[x]`
 Tambahan di luar backlog inti Tasks 1–16 (lihat `docs/spec.md` bagian 12): tambahkan navigasi tombol berjenjang hybrid dari `/start` (`Catat Transaksi`, `Lihat Laporan`, `Daftar Produk` per kategori `peralatan` / `bahan_umpan`) tanpa menghilangkan kemampuan chat bebas.
 Selesai kalau pemilik bisa memilih submenu laporan dan kategori produk lewat tombol maupun tetap mengetik chat langsung.

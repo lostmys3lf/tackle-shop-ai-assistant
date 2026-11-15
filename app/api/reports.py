@@ -3,9 +3,10 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
 
+from app.api.common import run_or_bad_request
 from app.api.security import verify_api_key
 from app.services.report_service import ReportService
 
@@ -101,13 +102,9 @@ def get_sales_report(
     ),
 ) -> SalesReportResponse:
     """Return aggregated confirmed sales and best-selling items in date range."""
-    try:
-        data = ReportService().get_sales_report(start=start, end=end)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+    data = run_or_bad_request(
+        lambda: ReportService().get_sales_report(start=start, end=end)
+    )
     return SalesReportResponse(**data)
 
 
@@ -123,11 +120,7 @@ def get_profit_loss_report(
     ),
 ) -> ProfitLossReportResponse:
     """Return monthly sales revenue, COGS, and gross profit."""
-    try:
-        data = ReportService().get_profit_loss_report(month=month)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        ) from exc
+    data = run_or_bad_request(
+        lambda: ReportService().get_profit_loss_report(month=month)
+    )
     return ProfitLossReportResponse(**data)

@@ -24,6 +24,7 @@ class MessageResponse(BaseModel):
     intent: str
     reply_text: str
     pending_transaction_id: int | None = None
+    show_main_menu: bool = False
 
 
 @router.post(

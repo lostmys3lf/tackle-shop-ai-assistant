@@ -30,6 +30,7 @@ services:
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-}
       N8N_MCP_ACCESS_ENABLED: "true"
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      NODE_OPTIONS: --dns-result-order=ipv4first
       GENERIC_TIMEZONE: Asia/Jakarta
       TZ: Asia/Jakarta
     volumes:

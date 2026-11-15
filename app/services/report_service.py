@@ -15,7 +15,7 @@ from app.domain.models import (
 )
 from app.infrastructure.db.connection import get_session
 from app.infrastructure.db.repositories import ReportRepository, get_jakarta_today
-from app.services.formatting import format_rupiah
+from app.services.formatting import format_rupiah, serialize_product_summary
 
 TOP_PRODUCTS_LIMIT = 5
 
@@ -112,17 +112,7 @@ class ReportService:
         return {
             "count": len(items),
             "has_low_stock": bool(items),
-            "items": [
-                {
-                    "product_id": item.id,
-                    "name": item.name,
-                    "category": item.category,
-                    "unit": item.unit,
-                    "stock_qty": item.stock_qty,
-                    "min_stock": item.min_stock,
-                }
-                for item in items
-            ],
+            "items": [serialize_product_summary(item) for item in items],
             "summary_text": _build_low_stock_summary(items),
         }
 

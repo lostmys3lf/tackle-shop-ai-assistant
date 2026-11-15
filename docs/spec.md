@@ -103,9 +103,10 @@ Semua endpoint selain `/health` dan `/metrics` wajib header `X-API-Key`.
   - penjualan atau pembelian: ekstrak, bikin transaksi `pending`, kembalikan teks konfirmasi;
   - pertanyaan: jalankan agent, kembalikan jawaban;
   - lainnya: balasan singkat bahwa bot cuma mengurus pencatatan toko.
-  Output: `{intent, reply_text, pending_transaction_id?}`.
+  Output: `{intent, reply_text, pending_transaction_id?, show_main_menu?}`.
 - `POST /transactions/{id}/confirm`: jalankan aturan akuntansi, kembalikan ringkasan (termasuk sisa stok).
 - `POST /transactions/{id}/reject`: ubah status jadi `rejected`.
+- `GET /products?category=`: daftar produk, stok terkini, dan harga jual (opsional filter kategori: `peralatan` atau `bahan_umpan`).
 - `GET /reports/low-stock`: produk dengan `stock_qty <= min_stock`.
 - `GET /reports/sales?start=&end=`: total penjualan, jumlah transaksi, barang terlaris.
 - `GET /reports/profit-loss?month=YYYY-MM`: penjualan, HPP, laba kotor.

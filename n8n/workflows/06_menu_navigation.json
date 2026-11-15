@@ -1,0 +1,1567 @@
+[
+  {
+    "updatedAt": "2026-11-13T12:32:50.564Z",
+    "createdAt": "2026-11-13T12:32:20.048Z",
+    "id": "iP2uhGN5xAo9IFR7",
+    "name": "6 - Navigasi Menu Berjenjang Telegram",
+    "description": "Sub-workflow untuk navigasi tombol inline menu berjenjang Telegram (Catat Transaksi, Lihat Laporan, Daftar Produk).",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "id": "da0499f5-e25e-4b63-a12b-fc6d8328618a",
+        "name": "Trigger Menu Berjenjang",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          0,
+          1152
+        ],
+        "parameters": {
+          "inputSource": "passthrough"
+        }
+      },
+      {
+        "id": "93e79788-53f5-4bab-89e2-c65cd27a7059",
+        "name": "Allowlist Pemilik",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.4,
+        "position": [
+          224,
+          1152
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "owner-allowlist-menu",
+                "leftValue": "={{ String($json.callback_query?.message?.chat?.id ?? $json.callback_query?.from?.id ?? \"\") }}",
+                "rightValue": "1191657048",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          }
+        }
+      },
+      {
+        "id": "bb44eb7c-40aa-489f-8b61-00c4ee0ee62e",
+        "name": "Ekstrak Callback Menu",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          496,
+          1360
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "cb-query-id",
+                "name": "callbackQueryId",
+                "type": "string",
+                "value": "={{ String($json.callback_query?.id ?? \"\") }}"
+              },
+              {
+                "id": "cb-chat-id",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($json.callback_query?.message?.chat?.id ?? $json.callback_query?.from?.id ?? \"\") }}"
+              },
+              {
+                "id": "cb-msg-id",
+                "name": "messageId",
+                "type": "string",
+                "value": "={{ $json.callback_query?.message?.message_id != null ? String($json.callback_query.message.message_id) : \"\" }}"
+              },
+              {
+                "id": "cb-action",
+                "name": "action",
+                "type": "string",
+                "value": "={{ String($json.callback_query?.data ?? \"menu:main\") }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "22303fe2-4ec6-447b-ad45-f2870ff11d31",
+        "name": "Jawab Callback Menu",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          720,
+          1360
+        ],
+        "parameters": {
+          "resource": "callback",
+          "operation": "answerQuery",
+          "queryId": "={{ $json.callbackQueryId }}",
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "02db369d-b476-453e-84c4-09f7990d37ef",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "918833e6-a842-4c9c-b884-d3ae4df37ec7",
+        "name": "Rute Menu",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.5,
+        "position": [
+          944,
+          1184
+        ],
+        "parameters": {
+          "mode": "rules",
+          "rules": {
+            "values": [
+              {
+                "renameOutput": true,
+                "outputKey": "menu:main",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-main",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:main"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:tx",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-tx",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:tx"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:tx:sale",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-tx-sale",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:tx:sale"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:tx:purchase",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-tx-purchase",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:tx:purchase"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:reports",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-reports",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:reports"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:rep:low",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-rep-low",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:rep:low"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:rep:sales",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-rep-sales",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:rep:sales"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:rep:pnl",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-rep-pnl",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:rep:pnl"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:products",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-products",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:products"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:prod:peralatan",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-prod-peralatan",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:prod:peralatan"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:prod:bahan_umpan",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-prod-bahan-umpan",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:prod:bahan_umpan"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "renameOutput": true,
+                "outputKey": "menu:prod:all",
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "case-menu-prod-all",
+                      "leftValue": "={{ $(\"Ekstrak Callback Menu\").item.json.action }}",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      },
+                      "rightValue": "menu:prod:all"
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra",
+            "renameFallbackOutput": "Fallback"
+          }
+        }
+      },
+      {
+        "id": "b9ab5cc0-be10-4245-9525-158293a9edb9",
+        "name": "Edit Menu Utama",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          976,
+          0
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}",
+          "messageId": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}",
+          "text": "Menu Utama Asisten Toko Pancing\n\nPilih menu di bawah ini, atau langsung ketik pesan transaksi / pertanyaan toko kapan saja.\n\nCatatan: 1 chat untuk 1 jenis transaksi saja (penjualan saja atau pembelian saja).",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Catat Transaksi",
+                      "additionalFields": {
+                        "callback_data": "menu:tx"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Lihat Laporan",
+                      "additionalFields": {
+                        "callback_data": "menu:reports"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Daftar Produk",
+                      "additionalFields": {
+                        "callback_data": "menu:products"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "721fe089-9eb1-468c-bdac-d3847d13d3a0",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "18ab7bde-e846-4930-916f-652282182a75",
+        "name": "Edit Submenu Transaksi",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          976,
+          192
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}",
+          "messageId": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}",
+          "text": "Catat Transaksi\n\nAnda bisa langsung mengetik pesan atau mengirim foto nota di chat kapan saja tanpa menunggu tombol.\n\nAturan: 1 chat hanya untuk 1 jenis transaksi (penjualan saja atau pembelian saja).\n\nPilih jenis transaksi untuk melihat contoh format:",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Contoh Penjualan",
+                      "additionalFields": {
+                        "callback_data": "menu:tx:sale"
+                      }
+                    },
+                    {
+                      "text": "Contoh Pembelian",
+                      "additionalFields": {
+                        "callback_data": "menu:tx:purchase"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Kembali ke Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "374ee969-7079-44e6-9f11-e2ad0e27008a",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "70c3b558-23f5-4737-885c-efaa6c4f484f",
+        "name": "Siapkan Contoh Penjualan",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          976,
+          384
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "tx-example-chat",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}"
+              },
+              {
+                "id": "tx-example-msg",
+                "name": "messageId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}"
+              },
+              {
+                "id": "tx-example-text",
+                "name": "messageText",
+                "type": "string",
+                "value": "Contoh Chat Penjualan / Pemasukan:\n- Terjual 2 Pelet Jitu harga @ 3000\n- Laku Senar Shino 1 gulung dan 3 Umpan Pak Ikin\n- Pemasukan lain 50000 jasa pasang senar\n\nSilakan langsung ketik pesan penjualan Anda di chat ini."
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "d01332ac-31fb-4cb9-8592-e2916a59b98f",
+        "name": "Edit Contoh Transaksi",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1360,
+          384
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($json.chatId) }}",
+          "messageId": "={{ String($json.messageId) }}",
+          "text": "={{ $json.messageText }}",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Kembali ke Catat Transaksi",
+                      "additionalFields": {
+                        "callback_data": "menu:tx"
+                      }
+                    },
+                    {
+                      "text": "Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "35bd7843-3398-4697-9b69-d3ac99df1a98",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "8726ade3-0d90-4691-ad47-d7533cb551ae",
+        "name": "Siapkan Contoh Pembelian",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          976,
+          576
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "tx-example-chat-p",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}"
+              },
+              {
+                "id": "tx-example-msg-p",
+                "name": "messageId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}"
+              },
+              {
+                "id": "tx-example-text-p",
+                "name": "messageText",
+                "type": "string",
+                "value": "Contoh Chat Pembelian / Pengeluaran:\n- Beli 10 bungkus Pelet Jitu @ 2500\n- Kulakan Senar Litecate 5 gulung total 125000\n- Biaya listrik toko 150000\n(Bisa juga kirim foto nota pembelian)\n\nSilakan langsung ketik pesan pembelian Anda di chat ini."
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "c82f3bb5-df01-47dc-a830-6b236fb5ad53",
+        "name": "Edit Submenu Laporan",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          976,
+          768
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}",
+          "messageId": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}",
+          "text": "Lihat Laporan\n\nPilih laporan yang ingin ditampilkan (atau ketik pertanyaan langsung di chat):",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Stok Menipis",
+                      "additionalFields": {
+                        "callback_data": "menu:rep:low"
+                      }
+                    },
+                    {
+                      "text": "Penjualan dan Terlaris",
+                      "additionalFields": {
+                        "callback_data": "menu:rep:sales"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Laba Rugi Bulanan",
+                      "additionalFields": {
+                        "callback_data": "menu:rep:pnl"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Kembali ke Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "4295d0e6-c0dd-4cf8-8e95-4f5fd83759fb",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "25bb6461-94a3-4a88-ae74-64d29450b8a8",
+        "name": "Ambil Laporan Stok Menipis",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          960
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/low-stock",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "e964e596-a9c7-47c7-b178-40c160bdf833",
+        "name": "Siapkan Hasil Laporan",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          1248,
+          1184
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "rep-chat-id",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}"
+              },
+              {
+                "id": "rep-msg-id",
+                "name": "messageId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}"
+              },
+              {
+                "id": "rep-text",
+                "name": "messageText",
+                "type": "string",
+                "value": "={{ ($json.statusCode === 200 ? ($json.body?.summary_text ?? \"Data laporan tidak tersedia.\") : (\"Maaf, gagal mengambil laporan: \" + ($json.body?.detail ?? \"error \" + ($json.statusCode ?? \"jaringan\")))).slice(0, 4000) }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "e3a8745a-09ab-4111-a940-3cf6053704e9",
+        "name": "Edit Hasil Laporan",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1472,
+          1184
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($json.chatId) }}",
+          "messageId": "={{ String($json.messageId) }}",
+          "text": "={{ $json.messageText }}",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Pilih Laporan Lain",
+                      "additionalFields": {
+                        "callback_data": "menu:reports"
+                      }
+                    },
+                    {
+                      "text": "Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "503216b2-e9a2-4843-87f6-f96e6f0fd412",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "d40684c9-85c2-4c13-a339-44f4de1e4fae",
+        "name": "Ambil Laporan Penjualan",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          1152
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/sales",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "e90e1147-9414-47ea-8424-a4f506284c5b",
+        "name": "Ambil Laporan Laba Rugi",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          1344
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/reports/profit-loss",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "834c11ce-da85-476a-a8e4-0339c259b9b0",
+        "name": "Edit Submenu Produk",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          976,
+          1536
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}",
+          "messageId": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}",
+          "text": "Daftar Produk Toko\n\nPilih kategori produk yang ingin ditampilkan:",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Peralatan",
+                      "additionalFields": {
+                        "callback_data": "menu:prod:peralatan"
+                      }
+                    },
+                    {
+                      "text": "Bahan Umpan",
+                      "additionalFields": {
+                        "callback_data": "menu:prod:bahan_umpan"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Semua Produk",
+                      "additionalFields": {
+                        "callback_data": "menu:prod:all"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Kembali ke Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "06332e18-f287-4435-b59d-5fd3a5908b94",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "602773e0-cbcf-4915-a77b-c0a464d424e8",
+        "name": "Ambil Produk Peralatan",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          1728
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/products",
+          "sendQuery": true,
+          "specifyQuery": "keypair",
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "category",
+                "value": "peralatan"
+              }
+            ]
+          },
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "a67a4fbd-175e-4166-a208-a319dda81287",
+        "name": "Siapkan Daftar Produk",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.5,
+        "position": [
+          1248,
+          1952
+        ],
+        "parameters": {
+          "mode": "manual",
+          "includeOtherFields": false,
+          "assignments": {
+            "assignments": [
+              {
+                "id": "prod-chat-id",
+                "name": "chatId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.chatId) }}"
+              },
+              {
+                "id": "prod-msg-id",
+                "name": "messageId",
+                "type": "string",
+                "value": "={{ String($(\"Ekstrak Callback Menu\").item.json.messageId) }}"
+              },
+              {
+                "id": "prod-text",
+                "name": "messageText",
+                "type": "string",
+                "value": "={{ ($json.statusCode === 200 ? ($json.body?.summary_text ?? \"Daftar produk kosong.\") : (\"Maaf, gagal mengambil daftar produk: \" + ($json.body?.detail ?? \"error \" + ($json.statusCode ?? \"jaringan\")))).slice(0, 4000) }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "504cc24c-98cd-4e1d-87f5-26f828b54d96",
+        "name": "Edit Daftar Produk",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          1472,
+          1952
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "editMessageText",
+          "messageType": "message",
+          "chatId": "={{ String($json.chatId) }}",
+          "messageId": "={{ String($json.messageId) }}",
+          "text": "={{ $json.messageText }}",
+          "replyMarkup": "inlineKeyboard",
+          "inlineKeyboard": {
+            "rows": [
+              {
+                "row": {
+                  "buttons": [
+                    {
+                      "text": "Pilih Kategori Lain",
+                      "additionalFields": {
+                        "callback_data": "menu:products"
+                      }
+                    },
+                    {
+                      "text": "Menu Utama",
+                      "additionalFields": {
+                        "callback_data": "menu:main"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "s5aSlkGJO8IwYGu6",
+            "name": "Telegram Bot Toko Pancing"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "webhookId": "def5c83d-2027-45c3-8612-6ccbfae69153",
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1500
+      },
+      {
+        "id": "518648bd-77ad-4f8d-a3eb-a1b0d8031e50",
+        "name": "Ambil Produk Bahan Umpan",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          1920
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/products",
+          "sendQuery": true,
+          "specifyQuery": "keypair",
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "category",
+                "value": "bahan_umpan"
+              }
+            ]
+          },
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "bd02d0b6-6765-4f01-be30-5280771c2b15",
+        "name": "Ambil Semua Produk",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          2112
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://api:8000/products",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "response": {
+              "response": {
+                "fullResponse": true,
+                "neverError": true
+              }
+            }
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "MmZR1P34Bj0EobnJ",
+            "name": "Header Auth account"
+          }
+        },
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 1000
+      },
+      {
+        "id": "db1e7f5c-c2d9-4339-bd12-134bedad9fc9",
+        "name": "Abaikan Bukan Pemilik",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          608,
+          1248
+        ],
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "Trigger Menu Berjenjang": {
+        "main": [
+          [
+            {
+              "node": "Allowlist Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Allowlist Pemilik": {
+        "main": [
+          [
+            {
+              "node": "Ekstrak Callback Menu",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Abaikan Bukan Pemilik",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ekstrak Callback Menu": {
+        "main": [
+          [
+            {
+              "node": "Jawab Callback Menu",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Jawab Callback Menu": {
+        "main": [
+          [
+            {
+              "node": "Rute Menu",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rute Menu": {
+        "main": [
+          [
+            {
+              "node": "Edit Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Edit Submenu Transaksi",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Siapkan Contoh Penjualan",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Siapkan Contoh Pembelian",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Edit Submenu Laporan",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Laporan Stok Menipis",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Laporan Penjualan",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Laporan Laba Rugi",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Edit Submenu Produk",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Produk Peralatan",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Produk Bahan Umpan",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Ambil Semua Produk",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Edit Menu Utama",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Siapkan Contoh Penjualan": {
+        "main": [
+          [
+            {
+              "node": "Edit Contoh Transaksi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Siapkan Contoh Pembelian": {
+        "main": [
+          [
+            {
+              "node": "Edit Contoh Transaksi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Stok Menipis": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Hasil Laporan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Siapkan Hasil Laporan": {
+        "main": [
+          [
+            {
+              "node": "Edit Hasil Laporan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Penjualan": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Hasil Laporan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Laporan Laba Rugi": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Hasil Laporan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Produk Peralatan": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Daftar Produk",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Siapkan Daftar Produk": {
+        "main": [
+          [
+            {
+              "node": "Edit Daftar Produk",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Produk Bahan Umpan": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Daftar Produk",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ambil Semua Produk": {
+        "main": [
+          [
+            {
+              "node": "Siapkan Daftar Produk",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "availableInMCP": true,
+      "timezone": "Asia/Jakarta"
+    },
+    "staticData": null,
+    "meta": {
+      "aiBuilderAssisted": true,
+      "builderVariant": "mcp"
+    },
+    "nodeGroups": [
+      {
+        "id": "218c6d6a-fd00-48ef-a7c9-11b764a2e665",
+        "name": "Validasi dan Rute Menu",
+        "nodeIds": [
+          "bb44eb7c-40aa-489f-8b61-00c4ee0ee62e",
+          "22303fe2-4ec6-447b-ad45-f2870ff11d31",
+          "918833e6-a842-4c9c-b884-d3ae4df37ec7"
+        ],
+        "description": "Ekstrak callback menu, jawab callback Telegram, dan arahkan ke cabang submenu yang sesuai"
+      },
+      {
+        "id": "36ba7c76-f655-454d-9669-68880477ca10",
+        "name": "Kirim Hasil Laporan",
+        "nodeIds": [
+          "e964e596-a9c7-47c7-b178-40c160bdf833",
+          "e3a8745a-09ab-4111-a940-3cf6053704e9"
+        ],
+        "description": "Normalisasi summary_text laporan dari FastAPI dan edit pesan menu Telegram"
+      },
+      {
+        "id": "2d181e02-132f-4baf-9520-694419db5742",
+        "name": "Kirim Daftar Produk",
+        "nodeIds": [
+          "a67a4fbd-175e-4166-a208-a319dda81287",
+          "504cc24c-98cd-4e1d-87f5-26f828b54d96"
+        ],
+        "description": "Normalisasi summary_text daftar produk dari FastAPI dan edit pesan menu Telegram"
+      }
+    ],
+    "pinData": null,
+    "versionId": "8dc13bb6-eb6a-4094-bfa4-48e2568fc003",
+    "activeVersionId": "8dc13bb6-eb6a-4094-bfa4-48e2568fc003",
+    "versionCounter": 2,
+    "triggerCount": 0,
+    "sourceWorkflowId": null,
+    "tags": [],
+    "versionMetadata": {
+      "name": "Configure HTTP auth credentials and retries",
+      "description": "Tautkan credential Header Auth account dan aktifkan retry pada seluruh node HTTP & Telegram."
+    }
+  }
+]

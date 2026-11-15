@@ -50,7 +50,8 @@ WELCOME_MESSAGE = (
     "• sisa stok pelet berapa?\n"
     "• penjualan hari ini berapa?\n"
     "• barang apa yang paling laris?\n\n"
-    "Ketik /start kapan saja untuk melihat panduan ini lagi."
+    "Pilih tombol menu di bawah atau langsung ketik pesan kapan saja.\n"
+    "Ketik /start atau /menu kapan saja untuk membuka menu ini lagi."
 )
 
 MIXED_TRANSACTION_REPLY = (
@@ -61,10 +62,10 @@ MIXED_TRANSACTION_REPLY = (
 
 
 def _is_welcome_command(text: str) -> bool:
-    """Return True if message starts with /start or /help command."""
+    """Return True if message starts with /start, /help, or /menu command."""
     first_token = text.strip().split(maxsplit=1)[0].lower()
     command = first_token.split("@", maxsplit=1)[0]
-    return command in {"/start", "/help"}
+    return command in {"/start", "/help", "/menu"}
 
 
 def _format_currency(amount: Decimal) -> str:
@@ -137,6 +138,7 @@ class MessageService:
                 "intent": MessageIntent.OTHER.value,
                 "reply_text": "Pesan kosong. Silakan ketik transaksi atau pertanyaan Anda.",
                 "pending_transaction_id": None,
+                "show_main_menu": False,
             }
 
         with get_session() as session:
@@ -149,7 +151,7 @@ class MessageService:
                 text=clean_text,
             )
 
-            # Tangani /start dan /help sebagai panduan awal tanpa panggil LLM
+            # Tangani /start, /help, dan /menu sebagai panduan awal tanpa panggil LLM
             if _is_welcome_command(clean_text):
                 msg_repo.update_reply(
                     msg.id,
@@ -162,6 +164,7 @@ class MessageService:
                     "intent": MessageIntent.OTHER.value,
                     "reply_text": WELCOME_MESSAGE,
                     "pending_transaction_id": None,
+                    "show_main_menu": True,
                 }
 
             # 2. Routing jenis pesan
@@ -191,6 +194,7 @@ class MessageService:
                 "intent": intent.value,
                 "reply_text": reply,
                 "pending_transaction_id": pending_tx_id,
+                "show_main_menu": False,
             }
 
     def _process_transaction_intent(  # pylint: disable=too-many-locals
