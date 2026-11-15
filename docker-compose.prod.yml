@@ -96,7 +96,7 @@ services:
         condition: service_healthy
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.16.0
     container_name: tackle-prometheus
     restart: unless-stopped
     ports:
@@ -109,7 +109,7 @@ services:
         condition: service_healthy
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.0
     container_name: tackle-grafana
     restart: unless-stopped
     ports:

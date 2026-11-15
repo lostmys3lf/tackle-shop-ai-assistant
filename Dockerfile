@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 # Install uv dari image resmi astral-sh
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /uvx /bin/
 
 # Atur direktori kerja
 WORKDIR /app
