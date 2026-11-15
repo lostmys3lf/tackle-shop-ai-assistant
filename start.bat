@@ -1,5 +1,6 @@
 @echo off
 setlocal
+cd /d "%~dp0"
 
 echo ========================================================================
 echo PERINGATAN: Pastikan VM GCP sudah dimatikan sebelum menjalankan mode lokal.
@@ -19,7 +20,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$tunnelUrl = $null; " ^
   "for ($i = 0; $i -lt 30; $i++) { " ^
   "  $logs = (& docker logs tackle-cloudflared 2>&1 | Out-String); " ^
-  "  if ($logs -match 'https://[a-z0-9-]+\.trycloudflare\.com') { $tunnelUrl = $Matches[0]; break }; " ^
+  "  $urlMatches = [regex]::Matches($logs, 'https://[a-z0-9-]+\.trycloudflare\.com'); " ^
+  "  if ($urlMatches.Count -gt 0) { $tunnelUrl = $urlMatches[$urlMatches.Count - 1].Value; break }; " ^
   "  Start-Sleep -Seconds 2; " ^
   "}; " ^
   "if (-not $tunnelUrl) { Write-Error 'Gagal menemukan URL Quick Tunnel di log tackle-cloudflared.'; exit 1 }; " ^

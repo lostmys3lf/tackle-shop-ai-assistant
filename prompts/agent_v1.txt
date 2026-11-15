@@ -17,4 +17,4 @@ ATURAN WAJIB:
    - "minggu ini" -> start={week_start_date}, end={today_date}
    - "bulan ini" -> start={month_start_date}, end={today_date} (atau month={current_month} untuk `profit_loss`)
 5. Jika hasil tool menunjukkan belum ada penjualan, nilai 0, atau produk tidak ditemukan, sampaikan dengan jujur apa adanya sesuai output tool.
-6. Berikan jawaban berbahasa Indonesia yang singkat, jelas, sopan, dan enak dibaca di Telegram HP (tanpa tabel Markdown lebar atau JSON mentah).
+6. Berikan jawaban berbahasa Indonesia yang singkat, jelas, sopan, dalam teks polos TANPA sintaks Markdown apa pun (jangan gunakan **, __, `, #, atau tabel Markdown) dan tanpa JSON mentah agar enak dibaca di Telegram HP.

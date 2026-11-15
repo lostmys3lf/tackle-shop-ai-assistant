@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 import json
 from pathlib import Path
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -24,6 +25,17 @@ DEFAULT_PROMPT_PATH = (
     Path(__file__).resolve().parent.parent.parent / "prompts" / "agent_v1.txt"
 )
 MAX_TOOL_ITERATIONS = 5
+
+
+def strip_markdown_markers(text: str) -> str:
+    """Remove Markdown formatting markers so Telegram plain-text replies render cleanly."""
+    cleaned = re.sub(r"```[a-zA-Z0-9_-]*\n?", "", text)
+    cleaned = cleaned.replace("`", "")
+    cleaned = cleaned.replace("**", "").replace("__", "")
+    cleaned = re.sub(r"(?m)^[ \t]*#+\s*", "", cleaned)
+    cleaned = re.sub(r"(?m)[ \t]+#+[ \t]*$", "", cleaned)
+    return cleaned.strip()
+
 
 AGENT_TOOLS: list[dict[str, Any]] = [
     {
@@ -321,7 +333,7 @@ class AgentService:
             response = self.client.generate_with_tools(req)
 
             if not response.tool_calls:
-                answer = response.content.strip()
+                answer = strip_markdown_markers(response.content.strip())
                 if not answer:
                     answer = (
                         "Maaf, saya belum bisa menyusun jawaban dari pertanyaan tersebut. "
@@ -371,7 +383,9 @@ class AgentService:
             temperature=0.0,
             max_tokens=1500,
         )
-        final_text = self.client.generate_text(final_req).strip()
+        final_text = strip_markdown_markers(
+            self.client.generate_text(final_req).strip()
+        )
         if not final_text:
             final_text = (
                 "Maaf, permintaan membutuhkan terlalu banyak langkah. "

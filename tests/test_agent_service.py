@@ -20,7 +20,11 @@ from app.infrastructure.db.models import (
 )
 from app.infrastructure.db.repositories import ReportRepository
 from app.infrastructure.llm.client import LLMToolCall, LLMToolResponse
-from app.services.agent_service import AgentService, MAX_TOOL_ITERATIONS
+from app.services.agent_service import (
+    AgentService,
+    MAX_TOOL_ITERATIONS,
+    strip_markdown_markers,
+)
 
 
 @pytest.fixture
@@ -380,3 +384,39 @@ def test_agent_service_handles_invalid_tool_args_and_max_iterations(seeded_db_se
     assert "YYYY-MM" in res.tool_outputs[2]["output"]["error"]
     assert res.answer == "Ringkasan stok berhasil diambil."
     assert mock_llm.generate_text.call_count == 1
+
+
+def test_strip_markdown_markers_and_agent_reply_sanitization(seeded_db_session):
+    """Verify agent replies strip **, __, backticks, and # heading markers."""
+    raw = (
+        "### Ringkasan Laba Rugi\n"
+        "**Omzet penjualan:** `Rp53.000`\n"
+        "__Laba kotor:__ ```\nRp9.000\n```"
+    )
+    cleaned = strip_markdown_markers(raw)
+    assert "**" not in cleaned
+    assert "__" not in cleaned
+    assert "`" not in cleaned
+    assert not cleaned.startswith("#")
+    assert "Omzet penjualan: Rp53.000" in cleaned
+    assert "Laba kotor: Rp9.000" in cleaned
+
+    mock_llm = MagicMock()
+    mock_llm.generate_with_tools.return_value = LLMToolResponse(
+        content="## Stok Saat Ini\n**Pelet Jitu:** __18 bungkus__ (`aman`)",
+        tool_calls=[],
+    )
+    agent = AgentService(llm_client=mock_llm)
+    reply = agent.answer_question("stok pelet jitu", session=seeded_db_session)
+    assert reply == "Stok Saat Ini\nPelet Jitu: 18 bungkus (aman)"
+
+    # Test juga jalur summary saat MAX_TOOL_ITERATIONS tercapai
+    loop_llm = MagicMock()
+    loop_llm.generate_with_tools.return_value = LLMToolResponse(
+        content="",
+        tool_calls=[LLMToolCall(id="c1", name="get_stock", arguments="{}")],
+    )
+    loop_llm.generate_text.return_value = "**Ringkasan:** `Rp19.000`"
+    loop_agent = AgentService(llm_client=loop_llm)
+    fallback_reply = loop_agent.answer_question("ringkasan", session=seeded_db_session)
+    assert fallback_reply == "Ringkasan: Rp19.000"
